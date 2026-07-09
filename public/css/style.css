@@ -1,0 +1,56 @@
+:root {
+  --coffee-dark: #4b2e1e;
+  --coffee-mid: #7b4b2a;
+  --coffee-accent: #c8894b;
+}
+
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+.coffee-navbar {
+  background-color: var(--coffee-dark);
+}
+
+.hero {
+  background: linear-gradient(135deg, var(--coffee-mid), var(--coffee-dark));
+}
+
+.coffee-card {
+  border: none;
+  border-radius: 0.85rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.coffee-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0.75rem 1.5rem rgba(75, 46, 30, 0.18) !important;
+}
+
+.rank-badge {
+  font-weight: 700;
+  color: var(--coffee-mid);
+}
+
+.rating-pill {
+  background-color: var(--coffee-accent);
+  color: #fff;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 1rem;
+}
+
+.rating-pill small {
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--coffee-mid);
+  --bs-btn-border-color: var(--coffee-mid);
+  --bs-btn-hover-bg: var(--coffee-dark);
+  --bs-btn-hover-border-color: var(--coffee-dark);
+  --bs-btn-active-bg: var(--coffee-dark);
+  --bs-btn-active-border-color: var(--coffee-dark);
+}

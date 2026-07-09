@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: coffee-rating-website
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: PORT
+        value: 3000
