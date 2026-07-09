@@ -43,19 +43,78 @@
         </div>
 
         <div class="mb-3">
-          <label for="rating" class="form-label">Rating (out of 10) *</label>
+          <label for="ordered" class="form-label">What was ordered</label>
           <input
-            type="number"
+            type="text"
             class="form-control"
-            id="rating"
-            name="rating"
-            min="0"
-            max="10"
-            step="0.1"
-            value="<%= values.rating %>"
-            required
+            id="ordered"
+            name="ordered"
+            maxlength="200"
+            placeholder="e.g. Oat flat white and a croissant"
+            value="<%= values.ordered %>"
           />
-          <div class="form-text">Enter a number from 0 to 10.</div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-6 col-md-3">
+            <label for="costRating" class="form-label">Cost *</label>
+            <input
+              type="number"
+              class="form-control"
+              id="costRating"
+              name="costRating"
+              min="0"
+              max="10"
+              step="0.1"
+              value="<%= values.costRating %>"
+              required
+            />
+          </div>
+          <div class="col-6 col-md-3">
+            <label for="tasteRating" class="form-label">Taste *</label>
+            <input
+              type="number"
+              class="form-control"
+              id="tasteRating"
+              name="tasteRating"
+              min="0"
+              max="10"
+              step="0.1"
+              value="<%= values.tasteRating %>"
+              required
+            />
+          </div>
+          <div class="col-6 col-md-3">
+            <label for="locationRating" class="form-label">Location *</label>
+            <input
+              type="number"
+              class="form-control"
+              id="locationRating"
+              name="locationRating"
+              min="0"
+              max="10"
+              step="0.1"
+              value="<%= values.locationRating %>"
+              required
+            />
+          </div>
+          <div class="col-6 col-md-3">
+            <label for="vibeRating" class="form-label">Vibe *</label>
+            <input
+              type="number"
+              class="form-control"
+              id="vibeRating"
+              name="vibeRating"
+              min="0"
+              max="10"
+              step="0.1"
+              value="<%= values.vibeRating %>"
+              required
+            />
+          </div>
+          <div class="col-12">
+            <div class="form-text">Rate each category from 0 to 10. The overall score is their average.</div>
+          </div>
         </div>
 
         <div class="mb-3">

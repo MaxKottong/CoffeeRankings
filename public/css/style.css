@@ -46,6 +46,30 @@ body {
   opacity: 0.85;
 }
 
+.category-ratings {
+  margin-top: 0.25rem;
+}
+
+.category-rating {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: rgba(200, 137, 75, 0.12);
+  border-radius: 0.5rem;
+  padding: 0.3rem 0.6rem;
+}
+
+.category-label {
+  font-size: 0.8rem;
+  color: var(--coffee-mid);
+  font-weight: 600;
+}
+
+.category-score {
+  font-weight: 700;
+  color: var(--coffee-dark);
+}
+
 .btn-primary {
   --bs-btn-bg: var(--coffee-mid);
   --bs-btn-border-color: var(--coffee-mid);
