@@ -7,6 +7,32 @@ const ratingField = (label) => ({
   max: [10, `${label} rating cannot be above 10.`],
 });
 
+const imageSchema = new mongoose.Schema(
+  {
+    data: { type: Buffer, required: true },
+    contentType: { type: String, required: true },
+  },
+  { _id: true }
+);
+
+const commentSchema = new mongoose.Schema(
+  {
+    author: {
+      type: String,
+      trim: true,
+      maxlength: [60, "Name must be 60 characters or fewer."],
+      default: "Anonymous",
+    },
+    body: {
+      type: String,
+      required: [true, "A comment cannot be empty."],
+      trim: true,
+      maxlength: [500, "Comment must be 500 characters or fewer."],
+    },
+  },
+  { timestamps: true }
+);
+
 const placeSchema = new mongoose.Schema(
   {
     name: {
@@ -37,6 +63,19 @@ const placeSchema = new mongoose.Schema(
       maxlength: [500, "Notes must be 500 characters or fewer."],
       default: "",
     },
+    owner: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      default: "",
+    },
+    ownerName: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    images: [imageSchema],
+    comments: [commentSchema],
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

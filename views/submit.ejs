@@ -15,7 +15,7 @@
         </div>
       <% } %>
 
-      <form action="/submit" method="POST" class="card shadow-sm p-4" novalidate>
+      <form action="/submit" method="POST" class="card shadow-sm p-4" enctype="multipart/form-data" novalidate>
         <div class="mb-3">
           <label for="name" class="form-label">Name of the place *</label>
           <input
@@ -127,6 +127,19 @@
             maxlength="500"
             placeholder="What did you think?"
           ><%= values.notes %></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label for="images" class="form-label">Photos</label>
+          <input
+            type="file"
+            class="form-control"
+            id="images"
+            name="images"
+            accept="image/*"
+            multiple
+          />
+          <div class="form-text">Upload up to 6 images (5&nbsp;MB each).</div>
         </div>
 
         <div class="d-flex gap-2">
