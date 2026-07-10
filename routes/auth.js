@@ -123,7 +123,7 @@ router.get("/signup", (req, res) => {
   res.render("signup", {
     title: "Sign Up",
     error: null,
-    values: { username: "", email: "", location: "" },
+    values: { username: "", email: "" },
   });
 });
 
@@ -178,7 +178,6 @@ router.post("/signup", async (req, res, next) => {
   if (!email) errors.push("Please enter an email.");
   if (email.length > 160) errors.push("Email must be 160 characters or fewer.");
   if (email && !/^\S+@\S+\.\S+$/.test(email)) errors.push("Please enter a valid email.");
-  if (!location) errors.push("Please enter a location.");
   if (location.length > 120) errors.push("Location must be 120 characters or fewer.");
   if (!password) errors.push("Please enter a password.");
   if (password.length < 8) errors.push("Password must be at least 8 characters.");
@@ -188,7 +187,7 @@ router.post("/signup", async (req, res, next) => {
     return res.status(400).render("signup", {
       title: "Sign Up",
       error: errors.join(" "),
-      values: { username, email, location },
+      values: { username, email },
     });
   }
 
@@ -201,14 +200,14 @@ router.post("/signup", async (req, res, next) => {
       return res.status(409).render("signup", {
         title: "Sign Up",
         error: "That username is already taken.",
-        values: { username, email, location },
+        values: { username, email },
       });
     }
     if (existingEmail) {
       return res.status(409).render("signup", {
         title: "Sign Up",
         error: "That email is already in use.",
-        values: { username, email, location },
+        values: { username, email },
       });
     }
 
@@ -239,7 +238,7 @@ router.post("/signup", async (req, res, next) => {
       return res.status(409).render("signup", {
         title: "Sign Up",
         error: message,
-        values: { username, email, location },
+        values: { username, email },
       });
     }
     next(err);
