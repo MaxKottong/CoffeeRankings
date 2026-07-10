@@ -150,6 +150,7 @@ mongoose
   .connect(MONGODB_URI)
   .then(async () => {
     console.log("Connected to MongoDB.");
+    await User.syncIndexes();
     await ensureUsernames();
     await ensureAdminUsers();
     app.listen(PORT, () => {

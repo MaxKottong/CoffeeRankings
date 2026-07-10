@@ -25,8 +25,10 @@ function normalizeUsername(value) {
     .toLowerCase();
 }
 
-function makeSyntheticEmail(username) {
-  return `${username}@users.local`;
+function normalizeEmail(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function normalizeBio(value) {
@@ -121,7 +123,7 @@ router.get("/signup", (req, res) => {
   res.render("signup", {
     title: "Sign Up",
     error: null,
-    values: { username: "", location: "" },
+    values: { username: "", email: "", location: "" },
   });
 });
 
@@ -162,6 +164,7 @@ router.post("/login", async (req, res, next) => {
 // Handle signup.
 router.post("/signup", async (req, res, next) => {
   const username = normalizeUsername(req.body.username);
+  const email = normalizeEmail(req.body.email);
   const location = String(req.body.location || "").trim();
   const password = String(req.body.password || "");
   const confirmPassword = String(req.body.confirmPassword || "");
@@ -172,6 +175,9 @@ router.post("/signup", async (req, res, next) => {
   if (!/^[a-z0-9._-]+$/.test(username)) {
     errors.push("Username can only contain letters, numbers, dot, underscore, and hyphen.");
   }
+  if (!email) errors.push("Please enter an email.");
+  if (email.length > 160) errors.push("Email must be 160 characters or fewer.");
+  if (email && !/^\S+@\S+\.\S+$/.test(email)) errors.push("Please enter a valid email.");
   if (!location) errors.push("Please enter a location.");
   if (location.length > 120) errors.push("Location must be 120 characters or fewer.");
   if (!password) errors.push("Please enter a password.");
@@ -182,17 +188,27 @@ router.post("/signup", async (req, res, next) => {
     return res.status(400).render("signup", {
       title: "Sign Up",
       error: errors.join(" "),
-      values: { username, location },
+      values: { username, email, location },
     });
   }
 
   try {
-    const existing = await User.findOne({ username }).lean();
-    if (existing) {
+    const [existingUsername, existingEmail] = await Promise.all([
+      User.findOne({ username }).lean(),
+      User.findOne({ email }).lean(),
+    ]);
+    if (existingUsername) {
       return res.status(409).render("signup", {
         title: "Sign Up",
         error: "That username is already taken.",
-        values: { username, location },
+        values: { username, email, location },
+      });
+    }
+    if (existingEmail) {
+      return res.status(409).render("signup", {
+        title: "Sign Up",
+        error: "That email is already in use.",
+        values: { username, email, location },
       });
     }
 
@@ -200,7 +216,7 @@ router.post("/signup", async (req, res, next) => {
     const created = await User.create({
       username,
       name: username,
-      email: makeSyntheticEmail(username),
+      email,
       location,
       passwordHash,
       isAdmin: false,
@@ -211,6 +227,21 @@ router.post("/signup", async (req, res, next) => {
     req.session.user = toSessionUser(created);
     res.redirect("/profile");
   } catch (err) {
+    if (err && err.code === 11000) {
+      const duplicateField = err.keyPattern && (err.keyPattern.username ? "username" : err.keyPattern.email ? "email" : null);
+      const message =
+        duplicateField === "username"
+          ? "That username is already taken."
+          : duplicateField === "email"
+          ? "That email is already in use."
+          : "That username or email is already in use.";
+
+      return res.status(409).render("signup", {
+        title: "Sign Up",
+        error: message,
+        values: { username, email, location },
+      });
+    }
     next(err);
   }
 });
