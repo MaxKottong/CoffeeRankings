@@ -458,12 +458,6 @@ h4,
   gap: 0.35rem;
 }
 
-.mini-beans {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.08rem;
-}
-
 .mini-bean {
   width: 8px;
   height: 6px;
