@@ -11,14 +11,14 @@
 
       <form action="/login" method="POST" class="card shadow-sm p-4" novalidate>
         <div class="mb-3">
-          <label for="email" class="form-label">Email</label>
+          <label for="username" class="form-label">Username</label>
           <input
-            type="email"
+            type="text"
             class="form-control"
-            id="email"
-            name="email"
+            id="username"
+            name="username"
             autocomplete="username"
-            value="<%= values.email %>"
+            value="<%= values.username %>"
             required
           />
         </div>

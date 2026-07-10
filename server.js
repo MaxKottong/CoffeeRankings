@@ -21,34 +21,82 @@ const SESSION_SECRET =
 
 const ADMIN_SEED_USERS = [
   {
+    username: "max",
     email: "max.kottong@gmail.com",
     name: "Max",
+    location: "Tampa, FL",
     password:
       process.env.MAX_ADMIN_PASSWORD || process.env.MAX_PASSWORD || "C@t@c1y5m1c",
   },
   {
+    username: "margo",
     email: "margaretmclean1@me.com",
     name: "Margo",
+    location: "Tampa, FL",
     password:
       process.env.MARGO_ADMIN_PASSWORD || process.env.MARGO_PASSWORD || "B!ackd0g123",
   },
 ];
 
+function slugifyUsername(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+}
+
+async function uniqueUsername(base) {
+  const fallback = slugifyUsername(base) || `user-${Date.now()}`;
+  let candidate = fallback;
+  let i = 1;
+  while (await User.findOne({ username: candidate }).lean()) {
+    candidate = `${fallback.slice(0, 36)}-${i}`;
+    i += 1;
+  }
+  return candidate;
+}
+
+async function ensureUsernames() {
+  const users = await User.find({
+    $or: [{ username: { $exists: false } }, { username: "" }],
+  });
+
+  for (const user of users) {
+    const source =
+      (user.email && user.email.split("@")[0]) || user.name || String(user._id);
+    user.username = await uniqueUsername(source);
+    if (!user.location) {
+      user.location = "";
+    }
+    await user.save();
+  }
+}
+
 async function ensureAdminUsers() {
   for (const seed of ADMIN_SEED_USERS) {
     const existing = await User.findOne({ email: seed.email });
     if (existing) {
+      if (!existing.username) {
+        existing.username = seed.username;
+      }
+      if (!existing.location) {
+        existing.location = seed.location;
+      }
       if (!existing.isAdmin) {
         existing.isAdmin = true;
-        await existing.save();
       }
+      await existing.save();
       continue;
     }
 
     const passwordHash = await bcrypt.hash(seed.password, 12);
     await User.create({
+      username: seed.username,
       name: seed.name,
       email: seed.email,
+      location: seed.location,
       passwordHash,
       isAdmin: true,
     });
@@ -102,6 +150,7 @@ mongoose
   .connect(MONGODB_URI)
   .then(async () => {
     console.log("Connected to MongoDB.");
+    await ensureUsernames();
     await ensureAdminUsers();
     app.listen(PORT, () => {
       console.log(`Coffee Ratings running at http://localhost:${PORT}`);

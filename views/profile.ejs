@@ -1,0 +1,97 @@
+<%- include("partials/header") %>
+
+<section class="container py-5 profile-page">
+  <article class="profile-shell">
+    <div class="profile-header-card">
+      <div class="profile-avatar-wrap">
+        <% if (profileUser.profileImage && profileUser.profileImage.data) { %>
+          <img class="profile-avatar" src="/users/<%= profileUser._id %>/profile-image" alt="Profile image" />
+        <% } else { %>
+          <div class="profile-avatar profile-avatar-fallback">PFP</div>
+        <% } %>
+      </div>
+
+      <div class="profile-headline">
+        <h1>@<%= profileUser.username %></h1>
+        <p><%= profileUser.bio || "about me: i love coffee!" %></p>
+      </div>
+    </div>
+
+    <div class="profile-meta-row">
+      <div class="profile-meta-item">
+        <p class="meta-label">Location</p>
+        <p class="meta-value"><%= profileUser.location || "Unknown" %></p>
+      </div>
+      <div class="profile-meta-item">
+        <p class="meta-label">Joined</p>
+        <p class="meta-value"><%= new Date(profileUser.createdAt).toLocaleString("en-US", { month: "long", year: "numeric" }) %></p>
+      </div>
+      <div class="profile-meta-item">
+        <p class="meta-label">Coffee Lover</p>
+        <p class="meta-value">Always searching for the next great cup.</p>
+      </div>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert alert-danger mt-3"><%= error %></div>
+    <% } %>
+
+    <form action="/profile?_method=PUT" method="POST" enctype="multipart/form-data" class="profile-edit-form mt-3">
+      <div class="row g-3">
+        <div class="col-12 col-lg-4">
+          <div class="profile-column-card">
+            <h2>Top 3 Coffees</h2>
+            <input type="text" class="form-control mb-2" name="topCoffee1" placeholder="1" value="<%= values.topCoffee1 %>" />
+            <input type="text" class="form-control mb-2" name="topCoffee2" placeholder="2" value="<%= values.topCoffee2 %>" />
+            <input type="text" class="form-control mb-3" name="topCoffee3" placeholder="3" value="<%= values.topCoffee3 %>" />
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+          <div class="profile-column-card">
+            <h2>Recent Reviews</h2>
+            <% if (!recentReviews.length) { %>
+              <p class="text-body-secondary">No recent community reviews yet.</p>
+            <% } else { %>
+              <% recentReviews.forEach(function (review) { %>
+                <article class="recent-review-item">
+                  <p class="recent-review-title"><%= review.placeName %> <span><%= review.overallRating.toFixed(1) %></span></p>
+                  <p class="recent-review-date"><%= new Date(review.createdAt).toLocaleDateString() %></p>
+                </article>
+              <% }); %>
+            <% } %>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+          <div class="profile-column-card">
+            <h2>Want to Try</h2>
+            <input type="text" class="form-control mb-2" name="try1" placeholder="1" value="<%= values.try1 %>" />
+            <input type="text" class="form-control mb-2" name="try2" placeholder="2" value="<%= values.try2 %>" />
+            <input type="text" class="form-control mb-3" name="try3" placeholder="3" value="<%= values.try3 %>" />
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-edit-lower mt-3">
+        <div class="row g-3">
+          <div class="col-12 col-md-4">
+            <label class="form-label">Profile Image</label>
+            <input type="file" class="form-control" name="profileImage" accept="image/*" />
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label">Location</label>
+            <input type="text" class="form-control" name="location" maxlength="120" value="<%= values.location %>" required />
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label">About Me</label>
+            <input type="text" class="form-control" name="bio" maxlength="300" value="<%= values.bio %>" />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Save Profile</button>
+      </div>
+    </form>
+  </article>
+</section>
+
+<%- include("partials/footer") %>

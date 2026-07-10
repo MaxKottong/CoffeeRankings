@@ -11,27 +11,27 @@
 
       <form action="/signup" method="POST" class="card shadow-sm p-4" novalidate>
         <div class="mb-3">
-          <label for="name" class="form-label">Name</label>
+          <label for="username" class="form-label">Username</label>
           <input
             type="text"
             class="form-control"
-            id="name"
-            name="name"
-            maxlength="80"
-            value="<%= values.name %>"
+            id="username"
+            name="username"
+            maxlength="40"
+            value="<%= values.username %>"
             required
           />
         </div>
 
         <div class="mb-3">
-          <label for="email" class="form-label">Email</label>
+          <label for="location" class="form-label">Location</label>
           <input
-            type="email"
+            type="text"
             class="form-control"
-            id="email"
-            name="email"
-            autocomplete="username"
-            value="<%= values.email %>"
+            id="location"
+            name="location"
+            maxlength="120"
+            value="<%= values.location %>"
             required
           />
         </div>
