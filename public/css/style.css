@@ -452,6 +452,47 @@ h4,
   color: #3d2f27;
 }
 
+.metric-score-with-beans {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.mini-beans {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.08rem;
+}
+
+.mini-bean {
+  width: 8px;
+  height: 6px;
+  border-radius: 50% / 58%;
+  background: #d8c8b3;
+  border: 1px solid rgba(111, 85, 70, 0.25);
+  position: relative;
+}
+
+.mini-bean::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: rgba(111, 85, 70, 0.42);
+  transform: rotate(14deg);
+}
+
+.mini-bean.active {
+  background: #6d4d37;
+  border-color: #5b402e;
+}
+
+.mini-bean.active::after {
+  background: rgba(244, 231, 216, 0.55);
+}
+
 .community-summary {
   border-top: 1px solid rgba(111, 85, 70, 0.18);
   padding-top: 0.8rem;

@@ -1,5 +1,13 @@
 <%- include("partials/header") %>
 
+<%
+  function beanCount(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return 0;
+    return Math.max(0, Math.min(10, Math.round(num)));
+  }
+%>
+
 <section class="container py-5">
   <div class="mb-3">
     <a href="/reviews" class="btn btn-sm btn-outline-secondary">Back to Reviews</a>
@@ -39,11 +47,61 @@
             <% if (place.maxReview) { %>
               <p class="review-ordered"><strong>Ordered:</strong> <%= place.maxReview.ordered || "-" %></p>
               <ul class="review-metrics list-unstyled">
-                <li>Cost <span><%= place.maxReview.costRating.toFixed(1) %></span></li>
-                <li>Taste <span><%= place.maxReview.tasteRating.toFixed(1) %></span></li>
-                <li>Location <span><%= place.maxReview.locationRating.toFixed(1) %></span></li>
-                <li>Vibe <span><%= place.maxReview.vibeRating.toFixed(1) %></span></li>
-                <li>Overall <span><%= place.maxReview.overallRating.toFixed(1) %></span></li>
+                <li>
+                  Cost
+                  <span class="metric-score-with-beans">
+                    <span><%= place.maxReview.costRating.toFixed(1) %></span>
+                    <span class="mini-beans" aria-hidden="true">
+                      <% for (let i = 1; i <= 10; i += 1) { %>
+                        <span class="mini-bean <%= i <= beanCount(place.maxReview.costRating) ? "active" : "" %>"></span>
+                      <% } %>
+                    </span>
+                  </span>
+                </li>
+                <li>
+                  Taste
+                  <span class="metric-score-with-beans">
+                    <span><%= place.maxReview.tasteRating.toFixed(1) %></span>
+                    <span class="mini-beans" aria-hidden="true">
+                      <% for (let i = 1; i <= 10; i += 1) { %>
+                        <span class="mini-bean <%= i <= beanCount(place.maxReview.tasteRating) ? "active" : "" %>"></span>
+                      <% } %>
+                    </span>
+                  </span>
+                </li>
+                <li>
+                  Location
+                  <span class="metric-score-with-beans">
+                    <span><%= place.maxReview.locationRating.toFixed(1) %></span>
+                    <span class="mini-beans" aria-hidden="true">
+                      <% for (let i = 1; i <= 10; i += 1) { %>
+                        <span class="mini-bean <%= i <= beanCount(place.maxReview.locationRating) ? "active" : "" %>"></span>
+                      <% } %>
+                    </span>
+                  </span>
+                </li>
+                <li>
+                  Vibe
+                  <span class="metric-score-with-beans">
+                    <span><%= place.maxReview.vibeRating.toFixed(1) %></span>
+                    <span class="mini-beans" aria-hidden="true">
+                      <% for (let i = 1; i <= 10; i += 1) { %>
+                        <span class="mini-bean <%= i <= beanCount(place.maxReview.vibeRating) ? "active" : "" %>"></span>
+                      <% } %>
+                    </span>
+                  </span>
+                </li>
+                <li>
+                  Overall
+                  <span class="metric-score-with-beans">
+                    <span><%= place.maxReview.overallRating.toFixed(1) %></span>
+                    <span class="mini-beans" aria-hidden="true">
+                      <% for (let i = 1; i <= 10; i += 1) { %>
+                        <span class="mini-bean <%= i <= beanCount(place.maxReview.overallRating) ? "active" : "" %>"></span>
+                      <% } %>
+                    </span>
+                  </span>
+                </li>
               </ul>
               <% if (place.maxReview.notes) { %>
                 <p class="card-text"><%= place.maxReview.notes %></p>
@@ -58,11 +116,61 @@
             <% if (place.margoReview) { %>
               <p class="review-ordered"><strong>Ordered:</strong> <%= place.margoReview.ordered || "-" %></p>
               <ul class="review-metrics list-unstyled">
-                <li>Cost <span><%= place.margoReview.costRating.toFixed(1) %></span></li>
-                <li>Taste <span><%= place.margoReview.tasteRating.toFixed(1) %></span></li>
-                <li>Location <span><%= place.margoReview.locationRating.toFixed(1) %></span></li>
-                <li>Vibe <span><%= place.margoReview.vibeRating.toFixed(1) %></span></li>
-                <li>Overall <span><%= place.margoReview.overallRating.toFixed(1) %></span></li>
+                <li>
+                  Cost
+                  <span class="metric-score-with-beans">
+                    <span><%= place.margoReview.costRating.toFixed(1) %></span>
+                    <span class="mini-beans" aria-hidden="true">
+                      <% for (let i = 1; i <= 10; i += 1) { %>
+                        <span class="mini-bean <%= i <= beanCount(place.margoReview.costRating) ? "active" : "" %>"></span>
+                      <% } %>
+                    </span>
+                  </span>
+                </li>
+                <li>
+                  Taste
+                  <span class="metric-score-with-beans">
+                    <span><%= place.margoReview.tasteRating.toFixed(1) %></span>
+                    <span class="mini-beans" aria-hidden="true">
+                      <% for (let i = 1; i <= 10; i += 1) { %>
+                        <span class="mini-bean <%= i <= beanCount(place.margoReview.tasteRating) ? "active" : "" %>"></span>
+                      <% } %>
+                    </span>
+                  </span>
+                </li>
+                <li>
+                  Location
+                  <span class="metric-score-with-beans">
+                    <span><%= place.margoReview.locationRating.toFixed(1) %></span>
+                    <span class="mini-beans" aria-hidden="true">
+                      <% for (let i = 1; i <= 10; i += 1) { %>
+                        <span class="mini-bean <%= i <= beanCount(place.margoReview.locationRating) ? "active" : "" %>"></span>
+                      <% } %>
+                    </span>
+                  </span>
+                </li>
+                <li>
+                  Vibe
+                  <span class="metric-score-with-beans">
+                    <span><%= place.margoReview.vibeRating.toFixed(1) %></span>
+                    <span class="mini-beans" aria-hidden="true">
+                      <% for (let i = 1; i <= 10; i += 1) { %>
+                        <span class="mini-bean <%= i <= beanCount(place.margoReview.vibeRating) ? "active" : "" %>"></span>
+                      <% } %>
+                    </span>
+                  </span>
+                </li>
+                <li>
+                  Overall
+                  <span class="metric-score-with-beans">
+                    <span><%= place.margoReview.overallRating.toFixed(1) %></span>
+                    <span class="mini-beans" aria-hidden="true">
+                      <% for (let i = 1; i <= 10; i += 1) { %>
+                        <span class="mini-bean <%= i <= beanCount(place.margoReview.overallRating) ? "active" : "" %>"></span>
+                      <% } %>
+                    </span>
+                  </span>
+                </li>
               </ul>
               <% if (place.margoReview.notes) { %>
                 <p class="card-text"><%= place.margoReview.notes %></p>
@@ -78,6 +186,13 @@
           <p class="community-score">
             <%= place.communityRating !== null ? place.communityRating.toFixed(1) + "/10" : "No ratings yet" %>
           </p>
+          <% if (place.communityRating !== null) { %>
+            <div class="mini-beans mb-1" aria-hidden="true">
+              <% for (let i = 1; i <= 10; i += 1) { %>
+                <span class="mini-bean <%= i <= beanCount(place.communityRating) ? "active" : "" %>"></span>
+              <% } %>
+            </div>
+          <% } %>
           <p class="text-body-secondary small mb-0"><%= place.communityReviewCount %> community review<%= place.communityReviewCount === 1 ? "" : "s" %></p>
         </div>
 
@@ -112,10 +227,66 @@
                   <label class="form-label">Ordered</label>
                   <input type="text" class="form-control" name="maxOrdered" maxlength="200" value="<%= criticValues.maxOrdered %>" />
                 </div>
-                <div class="col-6 col-md-3"><input type="number" class="form-control" name="maxCostRating" min="0" max="10" step="0.1" value="<%= criticValues.maxCostRating %>" placeholder="Cost" /></div>
-                <div class="col-6 col-md-3"><input type="number" class="form-control" name="maxTasteRating" min="0" max="10" step="0.1" value="<%= criticValues.maxTasteRating %>" placeholder="Taste" /></div>
-                <div class="col-6 col-md-3"><input type="number" class="form-control" name="maxLocationRating" min="0" max="10" step="0.1" value="<%= criticValues.maxLocationRating %>" placeholder="Location" /></div>
-                <div class="col-6 col-md-3"><input type="number" class="form-control" name="maxVibeRating" min="0" max="10" step="0.1" value="<%= criticValues.maxVibeRating %>" placeholder="Vibe" /></div>
+                <div class="col-12">
+                  <div class="bean-grid">
+                    <div>
+                      <label class="form-label">Cost</label>
+                      <div class="bean-rating" data-initial="<%= criticValues.maxCostRating %>">
+                        <input type="hidden" name="maxCostRating" value="<%= criticValues.maxCostRating %>" />
+                        <div class="bean-rating-buttons" role="radiogroup" aria-label="Max cost rating out of ten">
+                          <% for (let i = 1; i <= 10; i += 1) { %>
+                            <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                              <span class="bean-dot"></span>
+                            </button>
+                          <% } %>
+                        </div>
+                        <span class="bean-rating-value">0/10</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="form-label">Taste</label>
+                      <div class="bean-rating" data-initial="<%= criticValues.maxTasteRating %>">
+                        <input type="hidden" name="maxTasteRating" value="<%= criticValues.maxTasteRating %>" />
+                        <div class="bean-rating-buttons" role="radiogroup" aria-label="Max taste rating out of ten">
+                          <% for (let i = 1; i <= 10; i += 1) { %>
+                            <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                              <span class="bean-dot"></span>
+                            </button>
+                          <% } %>
+                        </div>
+                        <span class="bean-rating-value">0/10</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="form-label">Location</label>
+                      <div class="bean-rating" data-initial="<%= criticValues.maxLocationRating %>">
+                        <input type="hidden" name="maxLocationRating" value="<%= criticValues.maxLocationRating %>" />
+                        <div class="bean-rating-buttons" role="radiogroup" aria-label="Max location rating out of ten">
+                          <% for (let i = 1; i <= 10; i += 1) { %>
+                            <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                              <span class="bean-dot"></span>
+                            </button>
+                          <% } %>
+                        </div>
+                        <span class="bean-rating-value">0/10</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="form-label">Vibe</label>
+                      <div class="bean-rating" data-initial="<%= criticValues.maxVibeRating %>">
+                        <input type="hidden" name="maxVibeRating" value="<%= criticValues.maxVibeRating %>" />
+                        <div class="bean-rating-buttons" role="radiogroup" aria-label="Max vibe rating out of ten">
+                          <% for (let i = 1; i <= 10; i += 1) { %>
+                            <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                              <span class="bean-dot"></span>
+                            </button>
+                          <% } %>
+                        </div>
+                        <span class="bean-rating-value">0/10</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div class="col-12"><textarea class="form-control" name="maxNotes" rows="2" maxlength="500" placeholder="Max notes"><%= criticValues.maxNotes %></textarea></div>
               </div>
 
@@ -125,10 +296,66 @@
                   <label class="form-label">Ordered</label>
                   <input type="text" class="form-control" name="margoOrdered" maxlength="200" value="<%= criticValues.margoOrdered %>" />
                 </div>
-                <div class="col-6 col-md-3"><input type="number" class="form-control" name="margoCostRating" min="0" max="10" step="0.1" value="<%= criticValues.margoCostRating %>" placeholder="Cost" /></div>
-                <div class="col-6 col-md-3"><input type="number" class="form-control" name="margoTasteRating" min="0" max="10" step="0.1" value="<%= criticValues.margoTasteRating %>" placeholder="Taste" /></div>
-                <div class="col-6 col-md-3"><input type="number" class="form-control" name="margoLocationRating" min="0" max="10" step="0.1" value="<%= criticValues.margoLocationRating %>" placeholder="Location" /></div>
-                <div class="col-6 col-md-3"><input type="number" class="form-control" name="margoVibeRating" min="0" max="10" step="0.1" value="<%= criticValues.margoVibeRating %>" placeholder="Vibe" /></div>
+                <div class="col-12">
+                  <div class="bean-grid">
+                    <div>
+                      <label class="form-label">Cost</label>
+                      <div class="bean-rating" data-initial="<%= criticValues.margoCostRating %>">
+                        <input type="hidden" name="margoCostRating" value="<%= criticValues.margoCostRating %>" />
+                        <div class="bean-rating-buttons" role="radiogroup" aria-label="Margo cost rating out of ten">
+                          <% for (let i = 1; i <= 10; i += 1) { %>
+                            <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                              <span class="bean-dot"></span>
+                            </button>
+                          <% } %>
+                        </div>
+                        <span class="bean-rating-value">0/10</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="form-label">Taste</label>
+                      <div class="bean-rating" data-initial="<%= criticValues.margoTasteRating %>">
+                        <input type="hidden" name="margoTasteRating" value="<%= criticValues.margoTasteRating %>" />
+                        <div class="bean-rating-buttons" role="radiogroup" aria-label="Margo taste rating out of ten">
+                          <% for (let i = 1; i <= 10; i += 1) { %>
+                            <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                              <span class="bean-dot"></span>
+                            </button>
+                          <% } %>
+                        </div>
+                        <span class="bean-rating-value">0/10</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="form-label">Location</label>
+                      <div class="bean-rating" data-initial="<%= criticValues.margoLocationRating %>">
+                        <input type="hidden" name="margoLocationRating" value="<%= criticValues.margoLocationRating %>" />
+                        <div class="bean-rating-buttons" role="radiogroup" aria-label="Margo location rating out of ten">
+                          <% for (let i = 1; i <= 10; i += 1) { %>
+                            <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                              <span class="bean-dot"></span>
+                            </button>
+                          <% } %>
+                        </div>
+                        <span class="bean-rating-value">0/10</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="form-label">Vibe</label>
+                      <div class="bean-rating" data-initial="<%= criticValues.margoVibeRating %>">
+                        <input type="hidden" name="margoVibeRating" value="<%= criticValues.margoVibeRating %>" />
+                        <div class="bean-rating-buttons" role="radiogroup" aria-label="Margo vibe rating out of ten">
+                          <% for (let i = 1; i <= 10; i += 1) { %>
+                            <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                              <span class="bean-dot"></span>
+                            </button>
+                          <% } %>
+                        </div>
+                        <span class="bean-rating-value">0/10</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div class="col-12"><textarea class="form-control" name="margoNotes" rows="2" maxlength="500" placeholder="Margo notes"><%= criticValues.margoNotes %></textarea></div>
               </div>
 
@@ -169,14 +396,19 @@
                   </div>
                   <span class="rating-pill"><%= review.overallRating.toFixed(1) %><small>/10</small></span>
                 </div>
+                <div class="mini-beans mb-2" aria-hidden="true">
+                  <% for (let i = 1; i <= 10; i += 1) { %>
+                    <span class="mini-bean <%= i <= beanCount(review.overallRating) ? "active" : "" %>"></span>
+                  <% } %>
+                </div>
                 <% if (review.ordered) { %>
                   <p class="small mb-1"><strong>Ordered:</strong> <%= review.ordered %></p>
                 <% } %>
                 <div class="row row-cols-2 g-2 mb-2">
-                  <div class="col"><div class="category-rating"><span class="category-label">Cost</span><span class="category-score"><%= review.costRating.toFixed(1) %></span></div></div>
-                  <div class="col"><div class="category-rating"><span class="category-label">Taste</span><span class="category-score"><%= review.tasteRating.toFixed(1) %></span></div></div>
-                  <div class="col"><div class="category-rating"><span class="category-label">Location</span><span class="category-score"><%= review.locationRating.toFixed(1) %></span></div></div>
-                  <div class="col"><div class="category-rating"><span class="category-label">Vibe</span><span class="category-score"><%= review.vibeRating.toFixed(1) %></span></div></div>
+                  <div class="col"><div class="category-rating"><span class="category-label">Cost</span><span class="metric-score-with-beans"><span class="category-score"><%= review.costRating.toFixed(1) %></span><span class="mini-beans" aria-hidden="true"><% for (let i = 1; i <= 10; i += 1) { %><span class="mini-bean <%= i <= beanCount(review.costRating) ? "active" : "" %>"></span><% } %></span></span></div></div>
+                  <div class="col"><div class="category-rating"><span class="category-label">Taste</span><span class="metric-score-with-beans"><span class="category-score"><%= review.tasteRating.toFixed(1) %></span><span class="mini-beans" aria-hidden="true"><% for (let i = 1; i <= 10; i += 1) { %><span class="mini-bean <%= i <= beanCount(review.tasteRating) ? "active" : "" %>"></span><% } %></span></span></div></div>
+                  <div class="col"><div class="category-rating"><span class="category-label">Location</span><span class="metric-score-with-beans"><span class="category-score"><%= review.locationRating.toFixed(1) %></span><span class="mini-beans" aria-hidden="true"><% for (let i = 1; i <= 10; i += 1) { %><span class="mini-bean <%= i <= beanCount(review.locationRating) ? "active" : "" %>"></span><% } %></span></span></div></div>
+                  <div class="col"><div class="category-rating"><span class="category-label">Vibe</span><span class="metric-score-with-beans"><span class="category-score"><%= review.vibeRating.toFixed(1) %></span><span class="mini-beans" aria-hidden="true"><% for (let i = 1; i <= 10; i += 1) { %><span class="mini-bean <%= i <= beanCount(review.vibeRating) ? "active" : "" %>"></span><% } %></span></span></div></div>
                 </div>
                 <% if (review.notes) { %>
                   <p class="mb-0"><%= review.notes %></p>
