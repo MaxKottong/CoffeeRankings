@@ -138,9 +138,6 @@
           <p class="community-score">
             <%= place.communityRating !== null ? place.communityRating.toFixed(1) + "/10" : "No ratings yet" %>
           </p>
-          <% if (place.communityRating !== null) { %>
-            <div class="mb-1"><span class="mini-bean active" aria-hidden="true"></span></div>
-          <% } %>
           <p class="text-body-secondary small mb-0"><%= place.communityReviewCount %> community review<%= place.communityReviewCount === 1 ? "" : "s" %></p>
         </div>
 
@@ -326,8 +323,8 @@
 
 <section id="community-reviews" class="container pb-5">
   <div class="row g-4">
-    <div class="col-12 col-lg-7">
-      <div class="card coffee-card p-4">
+    <div class="col-12 col-lg-5">
+      <div class="card coffee-card p-4 community-reviews-list-card">
         <h2 class="h3 mb-3">Community Reviews</h2>
         <% if (place.communityReviews.length === 0) { %>
           <p class="text-body-secondary">No community reviews yet.</p>
@@ -344,7 +341,6 @@
                   </div>
                   <span class="rating-pill"><%= review.overallRating.toFixed(1) %><small>/10</small></span>
                 </div>
-                <div class="mb-2"><span class="mini-bean active" aria-hidden="true"></span></div>
                 <% if (review.ordered) { %>
                   <p class="small mb-1"><strong>Ordered:</strong> <%= review.ordered %></p>
                 <% } %>
@@ -369,8 +365,8 @@
       </div>
     </div>
 
-    <div class="col-12 col-lg-5">
-      <div class="card coffee-card p-4">
+    <div class="col-12 col-lg-7">
+      <div class="card coffee-card p-4 community-review-form-card">
         <h2 class="h4 mb-3">Leave Your Review</h2>
 
         <% if (typeof user !== "undefined" && user) { %>

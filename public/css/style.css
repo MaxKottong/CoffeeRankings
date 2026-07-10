@@ -565,6 +565,20 @@ h4,
   background-color: #fbf7f0;
 }
 
+.community-review-form-card .bean-grid {
+  grid-template-columns: 1fr;
+}
+
+.community-review-form-card .bean-btn {
+  width: 20px;
+  height: 20px;
+}
+
+.community-review-form-card .bean-dot {
+  width: 13px;
+  height: 10px;
+}
+
 .community-profile-link {
   display: inline-block;
   margin-left: 0.45rem;
