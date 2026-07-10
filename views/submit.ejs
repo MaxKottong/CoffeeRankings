@@ -1,9 +1,16 @@
 <%- include("partials/header") %>
 
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-12 col-lg-7">
-      <h1 class="h3 mb-4">Submit a Coffee Place</h1>
+<section class="submit-hero">
+  <div class="container py-5 text-center">
+    <h1 class="hero-title mb-2">New Review</h1>
+    <p class="hero-copy mx-auto">Share your Max and Margo review in one place.</p>
+  </div>
+</section>
+
+<div class="container py-5 submit-page-wrap">
+  <div class="row g-4 justify-content-center">
+    <div class="col-12 col-xl-8">
+      <h2 class="h3 mb-4">Coffee Details</h2>
 
       <% if (errors.length > 0) { %>
         <div class="alert alert-danger">
@@ -15,8 +22,8 @@
         </div>
       <% } %>
 
-      <form action="/submit" method="POST" class="card shadow-sm p-4" enctype="multipart/form-data" novalidate>
-        <div class="mb-3">
+      <form action="/submit" method="POST" class="card shadow-sm p-4 submit-form-card" enctype="multipart/form-data" novalidate>
+        <div class="mb-4">
           <label for="name" class="form-label">Name of the place *</label>
           <input
             type="text"
@@ -29,7 +36,7 @@
           />
         </div>
 
-        <div class="mb-3">
+        <div class="mb-4">
           <label for="location" class="form-label">Location</label>
           <input
             type="text"
@@ -43,80 +50,176 @@
         </div>
 
         <% if (isAdmin) { %>
-          <div class="row g-3 mb-3">
+          <div class="row g-4 mb-4">
             <div class="col-12">
-              <h2 class="h5 mb-2">Max Review</h2>
-            </div>
-            <div class="col-12">
-              <label for="maxOrdered" class="form-label">What Max ordered</label>
-              <input
-                type="text"
-                class="form-control"
-                id="maxOrdered"
-                name="maxOrdered"
-                maxlength="200"
-                value="<%= values.maxOrdered %>"
-              />
-            </div>
-            <div class="col-6 col-md-3">
-              <label for="maxCostRating" class="form-label">Max Cost</label>
-              <input type="number" class="form-control" id="maxCostRating" name="maxCostRating" min="0" max="10" step="0.1" value="<%= values.maxCostRating %>" />
-            </div>
-            <div class="col-6 col-md-3">
-              <label for="maxTasteRating" class="form-label">Max Taste</label>
-              <input type="number" class="form-control" id="maxTasteRating" name="maxTasteRating" min="0" max="10" step="0.1" value="<%= values.maxTasteRating %>" />
-            </div>
-            <div class="col-6 col-md-3">
-              <label for="maxLocationRating" class="form-label">Max Location</label>
-              <input type="number" class="form-control" id="maxLocationRating" name="maxLocationRating" min="0" max="10" step="0.1" value="<%= values.maxLocationRating %>" />
-            </div>
-            <div class="col-6 col-md-3">
-              <label for="maxVibeRating" class="form-label">Max Vibe</label>
-              <input type="number" class="form-control" id="maxVibeRating" name="maxVibeRating" min="0" max="10" step="0.1" value="<%= values.maxVibeRating %>" />
-            </div>
-            <div class="col-12">
-              <label for="maxNotes" class="form-label">Max Notes</label>
-              <textarea class="form-control" id="maxNotes" name="maxNotes" rows="2" maxlength="500"><%= values.maxNotes %></textarea>
+              <div class="review-block">
+                <h3 class="h4 mb-3">Max Review</h3>
+                <div class="mb-3">
+                  <label for="maxOrdered" class="form-label">What Max ordered</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="maxOrdered"
+                    name="maxOrdered"
+                    maxlength="200"
+                    value="<%= values.maxOrdered %>"
+                  />
+                </div>
+
+                <div class="bean-grid mb-3">
+                  <div>
+                    <label class="form-label">Max Cost</label>
+                    <div class="bean-rating" data-initial="<%= values.maxCostRating %>">
+                      <input type="hidden" name="maxCostRating" value="<%= values.maxCostRating %>" />
+                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Max cost rating out of ten">
+                        <% for (let i = 1; i <= 10; i += 1) { %>
+                          <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                            <span class="bean-dot"></span>
+                          </button>
+                        <% } %>
+                      </div>
+                      <span class="bean-rating-value">0/10</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="form-label">Max Taste</label>
+                    <div class="bean-rating" data-initial="<%= values.maxTasteRating %>">
+                      <input type="hidden" name="maxTasteRating" value="<%= values.maxTasteRating %>" />
+                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Max taste rating out of ten">
+                        <% for (let i = 1; i <= 10; i += 1) { %>
+                          <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                            <span class="bean-dot"></span>
+                          </button>
+                        <% } %>
+                      </div>
+                      <span class="bean-rating-value">0/10</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="form-label">Max Location</label>
+                    <div class="bean-rating" data-initial="<%= values.maxLocationRating %>">
+                      <input type="hidden" name="maxLocationRating" value="<%= values.maxLocationRating %>" />
+                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Max location rating out of ten">
+                        <% for (let i = 1; i <= 10; i += 1) { %>
+                          <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                            <span class="bean-dot"></span>
+                          </button>
+                        <% } %>
+                      </div>
+                      <span class="bean-rating-value">0/10</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="form-label">Max Vibe</label>
+                    <div class="bean-rating" data-initial="<%= values.maxVibeRating %>">
+                      <input type="hidden" name="maxVibeRating" value="<%= values.maxVibeRating %>" />
+                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Max vibe rating out of ten">
+                        <% for (let i = 1; i <= 10; i += 1) { %>
+                          <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                            <span class="bean-dot"></span>
+                          </button>
+                        <% } %>
+                      </div>
+                      <span class="bean-rating-value">0/10</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <label for="maxNotes" class="form-label">Max Notes</label>
+                  <textarea class="form-control" id="maxNotes" name="maxNotes" rows="2" maxlength="500"><%= values.maxNotes %></textarea>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="row g-3 mb-3">
+          <div class="row g-4 mb-4">
             <div class="col-12">
-              <h2 class="h5 mb-2">Margo Review</h2>
-            </div>
-            <div class="col-12">
-              <label for="margoOrdered" class="form-label">What Margo ordered</label>
-              <input
-                type="text"
-                class="form-control"
-                id="margoOrdered"
-                name="margoOrdered"
-                maxlength="200"
-                value="<%= values.margoOrdered %>"
-              />
-            </div>
-            <div class="col-6 col-md-3">
-              <label for="margoCostRating" class="form-label">Margo Cost</label>
-              <input type="number" class="form-control" id="margoCostRating" name="margoCostRating" min="0" max="10" step="0.1" value="<%= values.margoCostRating %>" />
-            </div>
-            <div class="col-6 col-md-3">
-              <label for="margoTasteRating" class="form-label">Margo Taste</label>
-              <input type="number" class="form-control" id="margoTasteRating" name="margoTasteRating" min="0" max="10" step="0.1" value="<%= values.margoTasteRating %>" />
-            </div>
-            <div class="col-6 col-md-3">
-              <label for="margoLocationRating" class="form-label">Margo Location</label>
-              <input type="number" class="form-control" id="margoLocationRating" name="margoLocationRating" min="0" max="10" step="0.1" value="<%= values.margoLocationRating %>" />
-            </div>
-            <div class="col-6 col-md-3">
-              <label for="margoVibeRating" class="form-label">Margo Vibe</label>
-              <input type="number" class="form-control" id="margoVibeRating" name="margoVibeRating" min="0" max="10" step="0.1" value="<%= values.margoVibeRating %>" />
-            </div>
-            <div class="col-12">
-              <label for="margoNotes" class="form-label">Margo Notes</label>
-              <textarea class="form-control" id="margoNotes" name="margoNotes" rows="2" maxlength="500"><%= values.margoNotes %></textarea>
-            </div>
-            <div class="col-12">
-              <div class="form-text">Admins can submit Max and Margo in one action.</div>
+              <div class="review-block">
+                <h3 class="h4 mb-3">Margo Review</h3>
+                <div class="mb-3">
+                  <label for="margoOrdered" class="form-label">What Margo ordered</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="margoOrdered"
+                    name="margoOrdered"
+                    maxlength="200"
+                    value="<%= values.margoOrdered %>"
+                  />
+                </div>
+
+                <div class="bean-grid mb-3">
+                  <div>
+                    <label class="form-label">Margo Cost</label>
+                    <div class="bean-rating" data-initial="<%= values.margoCostRating %>">
+                      <input type="hidden" name="margoCostRating" value="<%= values.margoCostRating %>" />
+                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Margo cost rating out of ten">
+                        <% for (let i = 1; i <= 10; i += 1) { %>
+                          <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                            <span class="bean-dot"></span>
+                          </button>
+                        <% } %>
+                      </div>
+                      <span class="bean-rating-value">0/10</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="form-label">Margo Taste</label>
+                    <div class="bean-rating" data-initial="<%= values.margoTasteRating %>">
+                      <input type="hidden" name="margoTasteRating" value="<%= values.margoTasteRating %>" />
+                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Margo taste rating out of ten">
+                        <% for (let i = 1; i <= 10; i += 1) { %>
+                          <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                            <span class="bean-dot"></span>
+                          </button>
+                        <% } %>
+                      </div>
+                      <span class="bean-rating-value">0/10</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="form-label">Margo Location</label>
+                    <div class="bean-rating" data-initial="<%= values.margoLocationRating %>">
+                      <input type="hidden" name="margoLocationRating" value="<%= values.margoLocationRating %>" />
+                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Margo location rating out of ten">
+                        <% for (let i = 1; i <= 10; i += 1) { %>
+                          <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                            <span class="bean-dot"></span>
+                          </button>
+                        <% } %>
+                      </div>
+                      <span class="bean-rating-value">0/10</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="form-label">Margo Vibe</label>
+                    <div class="bean-rating" data-initial="<%= values.margoVibeRating %>">
+                      <input type="hidden" name="margoVibeRating" value="<%= values.margoVibeRating %>" />
+                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Margo vibe rating out of ten">
+                        <% for (let i = 1; i <= 10; i += 1) { %>
+                          <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                            <span class="bean-dot"></span>
+                          </button>
+                        <% } %>
+                      </div>
+                      <span class="bean-rating-value">0/10</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <label for="margoNotes" class="form-label">Margo Notes</label>
+                  <textarea class="form-control" id="margoNotes" name="margoNotes" rows="2" maxlength="500"><%= values.margoNotes %></textarea>
+                </div>
+                <div class="form-text mt-2">Admins can submit Max and Margo in one action.</div>
+              </div>
             </div>
           </div>
         <% } else { %>
@@ -221,13 +324,48 @@
           <div class="form-text">Upload up to 6 images (5&nbsp;MB each).</div>
         </div>
 
-        <div class="d-flex gap-2">
-          <button type="submit" class="btn btn-primary">Submit</button>
+        <div class="d-flex gap-2 submit-actions">
+          <button type="submit" class="btn btn-primary px-4">Publish Review</button>
           <a href="/" class="btn btn-outline-secondary">Cancel</a>
         </div>
       </form>
     </div>
   </div>
 </div>
+
+<script>
+  (function () {
+    function initBeanRating(container) {
+      var hidden = container.querySelector('input[type="hidden"]');
+      var buttons = Array.prototype.slice.call(container.querySelectorAll('.bean-btn'));
+      var valueEl = container.querySelector('.bean-rating-value');
+      var initialRaw = parseFloat(container.getAttribute('data-initial') || hidden.value || '0');
+      var current = Number.isFinite(initialRaw) ? Math.max(0, Math.min(10, Math.round(initialRaw))) : 0;
+
+      function render(next) {
+        current = Math.max(0, Math.min(10, Number(next) || 0));
+        hidden.value = current ? String(current) : '';
+        valueEl.textContent = (current || 0) + '/10';
+
+        buttons.forEach(function (btn) {
+          var value = Number(btn.getAttribute('data-value') || '0');
+          var active = value <= current;
+          btn.classList.toggle('active', active);
+          btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+      }
+
+      buttons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          render(Number(btn.getAttribute('data-value') || '0'));
+        });
+      });
+
+      render(current);
+    }
+
+    Array.prototype.slice.call(document.querySelectorAll('.bean-rating')).forEach(initBeanRating);
+  })();
+</script>
 
 <%- include("partials/footer") %>

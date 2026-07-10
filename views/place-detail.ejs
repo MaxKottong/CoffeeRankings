@@ -217,22 +217,65 @@
               <label class="form-label">Ordered</label>
               <input type="text" class="form-control" name="ordered" maxlength="200" value="<%= communityValues.ordered %>" />
             </div>
-            <div class="row g-2 mb-2">
-              <div class="col-6">
+            <div class="bean-grid mb-3">
+              <div>
                 <label class="form-label">Cost *</label>
-                <input type="number" class="form-control" name="costRating" min="0" max="10" step="0.1" value="<%= communityValues.costRating %>" required />
+                <div class="bean-rating" data-initial="<%= communityValues.costRating %>">
+                  <input type="hidden" name="costRating" value="<%= communityValues.costRating %>" />
+                  <div class="bean-rating-buttons" role="radiogroup" aria-label="Cost rating out of ten">
+                    <% for (let i = 1; i <= 10; i += 1) { %>
+                      <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                        <span class="bean-dot"></span>
+                      </button>
+                    <% } %>
+                  </div>
+                  <span class="bean-rating-value">0/10</span>
+                </div>
               </div>
-              <div class="col-6">
+
+              <div>
                 <label class="form-label">Taste *</label>
-                <input type="number" class="form-control" name="tasteRating" min="0" max="10" step="0.1" value="<%= communityValues.tasteRating %>" required />
+                <div class="bean-rating" data-initial="<%= communityValues.tasteRating %>">
+                  <input type="hidden" name="tasteRating" value="<%= communityValues.tasteRating %>" />
+                  <div class="bean-rating-buttons" role="radiogroup" aria-label="Taste rating out of ten">
+                    <% for (let i = 1; i <= 10; i += 1) { %>
+                      <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                        <span class="bean-dot"></span>
+                      </button>
+                    <% } %>
+                  </div>
+                  <span class="bean-rating-value">0/10</span>
+                </div>
               </div>
-              <div class="col-6">
+
+              <div>
                 <label class="form-label">Location *</label>
-                <input type="number" class="form-control" name="locationRating" min="0" max="10" step="0.1" value="<%= communityValues.locationRating %>" required />
+                <div class="bean-rating" data-initial="<%= communityValues.locationRating %>">
+                  <input type="hidden" name="locationRating" value="<%= communityValues.locationRating %>" />
+                  <div class="bean-rating-buttons" role="radiogroup" aria-label="Location rating out of ten">
+                    <% for (let i = 1; i <= 10; i += 1) { %>
+                      <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                        <span class="bean-dot"></span>
+                      </button>
+                    <% } %>
+                  </div>
+                  <span class="bean-rating-value">0/10</span>
+                </div>
               </div>
-              <div class="col-6">
+
+              <div>
                 <label class="form-label">Vibe *</label>
-                <input type="number" class="form-control" name="vibeRating" min="0" max="10" step="0.1" value="<%= communityValues.vibeRating %>" required />
+                <div class="bean-rating" data-initial="<%= communityValues.vibeRating %>">
+                  <input type="hidden" name="vibeRating" value="<%= communityValues.vibeRating %>" />
+                  <div class="bean-rating-buttons" role="radiogroup" aria-label="Vibe rating out of ten">
+                    <% for (let i = 1; i <= 10; i += 1) { %>
+                      <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
+                        <span class="bean-dot"></span>
+                      </button>
+                    <% } %>
+                  </div>
+                  <span class="bean-rating-value">0/10</span>
+                </div>
               </div>
             </div>
             <div class="mb-3">
@@ -256,6 +299,39 @@
     if (!panel) return;
     panel.classList.toggle("d-none");
   }
+
+  (function () {
+    function initBeanRating(container) {
+      var hidden = container.querySelector('input[type="hidden"]');
+      var buttons = Array.prototype.slice.call(container.querySelectorAll('.bean-btn'));
+      var valueEl = container.querySelector('.bean-rating-value');
+      var initialRaw = parseFloat(container.getAttribute('data-initial') || hidden.value || '0');
+      var current = Number.isFinite(initialRaw) ? Math.max(0, Math.min(10, Math.round(initialRaw))) : 0;
+
+      function render(next) {
+        current = Math.max(0, Math.min(10, Number(next) || 0));
+        hidden.value = current ? String(current) : '';
+        valueEl.textContent = (current || 0) + '/10';
+
+        buttons.forEach(function (btn) {
+          var value = Number(btn.getAttribute('data-value') || '0');
+          var active = value <= current;
+          btn.classList.toggle('active', active);
+          btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+      }
+
+      buttons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          render(Number(btn.getAttribute('data-value') || '0'));
+        });
+      });
+
+      render(current);
+    }
+
+    Array.prototype.slice.call(document.querySelectorAll('.bean-rating')).forEach(initBeanRating);
+  })();
 </script>
 
 <%- include("partials/footer") %>

@@ -40,20 +40,17 @@
               class="form-control form-control-sm"
               type="search"
               name="q"
-              placeholder="Search places"
+              placeholder="Search coffee..."
               aria-label="Search places"
             />
-            <button class="btn btn-sm btn-outline-secondary" type="submit">Search</button>
+            <button class="btn btn-sm btn-outline-secondary" type="submit">Go</button>
           </form>
           <ul class="navbar-nav ms-auto align-items-lg-center">
-            <li class="nav-item">
-              <a class="nav-link" href="/">Home</a>
-            </li>
             <li class="nav-item">
               <a class="nav-link" href="/reviews">Reviews</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="/about">About Us</a>
+              <a class="nav-link" href="/about">About</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" href="/contact">Contact</a>
@@ -65,7 +62,10 @@
                 </li>
               <% } %>
               <li class="nav-item">
-                <a class="nav-link" href="/profile">Profile</a>
+                <a class="nav-link nav-profile-pill" href="/profile" aria-label="Open profile">
+                  <span class="profile-pill-avatar"><%= (user.username || "me").slice(0, 2).toUpperCase() %></span>
+                  <span class="profile-pill-label">Profile</span>
+                </a>
               </li>
               <li class="nav-item">
                 <form action="/logout" method="POST" class="d-inline">

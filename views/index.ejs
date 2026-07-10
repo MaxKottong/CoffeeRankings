@@ -54,10 +54,21 @@
           <%= latestPlace.latestReview && latestPlace.latestReview.notes ? latestPlace.latestReview.notes : "No notes yet for this place." %>
         </p>
         <div class="featured-rating-box">
-          <p class="meta-label mb-1">Latest Score</p>
-          <p class="featured-score">
-            <%= latestPlace.criticsAverage !== null ? latestPlace.criticsAverage.toFixed(1) + "/10" : "-" %>
+          <p class="meta-label mb-1">Community Score</p>
+          <% const communityStars = latestPlace.communityRating !== null ? Math.round(latestPlace.communityRating / 2) : 0; %>
+          <p class="featured-score mb-1">
+            <%= latestPlace.communityRating !== null ? latestPlace.communityRating.toFixed(1) + "/10" : "No ratings yet" %>
           </p>
+          <% if (latestPlace.communityRating !== null) { %>
+            <p class="review-stars mb-1" aria-label="Community rating <%= latestPlace.communityRating.toFixed(1) %> out of 10">
+              <% for (let i = 1; i <= 5; i += 1) { %>
+                <span class="review-star <%= i <= communityStars ? "filled" : "" %>"><%= i <= communityStars ? "&#9733;" : "&#9734;" %></span>
+              <% } %>
+            </p>
+            <p class="small text-body-secondary mb-0">Based on <%= latestPlace.communityReviewCount %> community review<%= latestPlace.communityReviewCount === 1 ? "" : "s" %></p>
+          <% } else { %>
+            <p class="small text-body-secondary mb-0">No community reviews yet</p>
+          <% } %>
           <a href="/places/<%= latestPlace.anchorId %>" class="btn btn-outline-secondary mt-3">View Full Review</a>
         </div>
       </div>
