@@ -19,6 +19,10 @@ const MONGODB_URI =
 const SESSION_SECRET =
   process.env.SESSION_SECRET || "coffee-ratings-dev-secret-change-me";
 
+// Run index migrations manually after connect to avoid startup failures
+// caused by legacy index option mismatches (for example sparse vs non-sparse).
+mongoose.set("autoIndex", false);
+
 const ADMIN_SEED_USERS = [
   {
     username: "max",
@@ -105,12 +109,16 @@ async function ensureAdminUsers() {
 
 async function ensureUserIndexes() {
   const indexes = await User.collection.indexes();
-  const usernameIndex = indexes.find((idx) => idx.name === "username_1");
+  const legacySparseIndexes = indexes.filter(
+    (idx) =>
+      idx.sparse &&
+      idx.key &&
+      ((idx.key.username === 1 && idx.name === "username_1") ||
+        (idx.key.email === 1 && idx.name === "email_1"))
+  );
 
-  // Older deployments may have a sparse username index. Remove it so
-  // syncIndexes can create the strict unique index without conflicts.
-  if (usernameIndex && usernameIndex.sparse) {
-    await User.collection.dropIndex("username_1");
+  for (const idx of legacySparseIndexes) {
+    await User.collection.dropIndex(idx.name);
   }
 
   await User.syncIndexes();
@@ -160,7 +168,7 @@ app.use((err, req, res, next) => {
 
 // Connect to MongoDB, then start the server
 mongoose
-  .connect(MONGODB_URI)
+  .connect(MONGODB_URI, { autoIndex: false })
   .then(async () => {
     console.log("Connected to MongoDB.");
     await ensureUsernames();
