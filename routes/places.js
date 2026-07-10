@@ -842,6 +842,7 @@ router.delete(
 // Add a community review with ratings that feed the community score.
 router.post(
   "/places/:id/community-reviews",
+  requireAuth,
   body("author")
     .trim()
     .isLength({ max: 60 })
