@@ -1,0 +1,219 @@
+<%- include("partials/header") %>
+
+<section class="container py-5">
+  <div class="mb-3">
+    <a href="/reviews" class="btn btn-sm btn-outline-secondary">Back to Reviews</a>
+  </div>
+
+  <article class="detail-shell">
+    <div class="detail-header">
+      <h1 class="mb-1"><%= place.name %></h1>
+      <p class="text-body-secondary mb-0"><%= place.location || "Location not listed" %></p>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-photo">
+        <% if (place.image) { %>
+          <img
+            src="/places/<%= place.anchorId %>/image/<%= place.image._id %>"
+            alt="Photo of <%= place.name %>"
+            loading="lazy"
+          />
+        <% } else { %>
+          <div class="featured-image featured-image-placeholder">No photo yet</div>
+        <% } %>
+      </div>
+
+      <div class="detail-ratings">
+        <div class="review-columns mb-3">
+          <section class="review-column">
+            <h3>Max</h3>
+            <% if (place.maxReview) { %>
+              <p class="review-ordered"><strong>Ordered:</strong> <%= place.maxReview.ordered || "-" %></p>
+              <ul class="review-metrics list-unstyled">
+                <li>Cost <span><%= place.maxReview.costRating.toFixed(1) %></span></li>
+                <li>Taste <span><%= place.maxReview.tasteRating.toFixed(1) %></span></li>
+                <li>Location <span><%= place.maxReview.locationRating.toFixed(1) %></span></li>
+                <li>Vibe <span><%= place.maxReview.vibeRating.toFixed(1) %></span></li>
+                <li>Overall <span><%= place.maxReview.overallRating.toFixed(1) %></span></li>
+              </ul>
+              <% if (place.maxReview.notes) { %>
+                <p class="card-text"><%= place.maxReview.notes %></p>
+              <% } %>
+            <% } else { %>
+              <p class="text-body-secondary small">No review yet.</p>
+            <% } %>
+          </section>
+
+          <section class="review-column">
+            <h3>Margo</h3>
+            <% if (place.margoReview) { %>
+              <p class="review-ordered"><strong>Ordered:</strong> <%= place.margoReview.ordered || "-" %></p>
+              <ul class="review-metrics list-unstyled">
+                <li>Cost <span><%= place.margoReview.costRating.toFixed(1) %></span></li>
+                <li>Taste <span><%= place.margoReview.tasteRating.toFixed(1) %></span></li>
+                <li>Location <span><%= place.margoReview.locationRating.toFixed(1) %></span></li>
+                <li>Vibe <span><%= place.margoReview.vibeRating.toFixed(1) %></span></li>
+                <li>Overall <span><%= place.margoReview.overallRating.toFixed(1) %></span></li>
+              </ul>
+              <% if (place.margoReview.notes) { %>
+                <p class="card-text"><%= place.margoReview.notes %></p>
+              <% } %>
+            <% } else { %>
+              <p class="text-body-secondary small">No review yet.</p>
+            <% } %>
+          </section>
+        </div>
+
+        <div class="community-summary big">
+          <p class="meta-label mb-1">Community Rating</p>
+          <p class="community-score">
+            <%= place.communityRating !== null ? place.communityRating.toFixed(1) + "/10" : "No ratings yet" %>
+          </p>
+          <p class="text-body-secondary small mb-0"><%= place.communityReviewCount %> community review<%= place.communityReviewCount === 1 ? "" : "s" %></p>
+        </div>
+      </div>
+    </div>
+  </article>
+</section>
+
+<section id="community-reviews" class="container pb-5">
+  <div class="row g-4">
+    <div class="col-12 col-lg-7">
+      <div class="card coffee-card p-4">
+        <h2 class="h3 mb-3">Community Reviews</h2>
+        <% if (place.communityReviews.length === 0) { %>
+          <p class="text-body-secondary">No community reviews yet.</p>
+        <% } else { %>
+          <div class="community-list">
+            <% place.communityReviews.forEach(function (review) { %>
+              <article class="community-item">
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+                  <strong><%= review.author || "Anonymous" %></strong>
+                  <span class="rating-pill"><%= review.overallRating.toFixed(1) %><small>/10</small></span>
+                </div>
+                <% if (review.ordered) { %>
+                  <p class="small mb-1"><strong>Ordered:</strong> <%= review.ordered %></p>
+                <% } %>
+                <div class="row row-cols-2 g-2 mb-2">
+                  <div class="col"><div class="category-rating"><span class="category-label">Cost</span><span class="category-score"><%= review.costRating.toFixed(1) %></span></div></div>
+                  <div class="col"><div class="category-rating"><span class="category-label">Taste</span><span class="category-score"><%= review.tasteRating.toFixed(1) %></span></div></div>
+                  <div class="col"><div class="category-rating"><span class="category-label">Location</span><span class="category-score"><%= review.locationRating.toFixed(1) %></span></div></div>
+                  <div class="col"><div class="category-rating"><span class="category-label">Vibe</span><span class="category-score"><%= review.vibeRating.toFixed(1) %></span></div></div>
+                </div>
+                <% if (review.notes) { %>
+                  <p class="mb-0"><%= review.notes %></p>
+                <% } %>
+              </article>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-5">
+      <div class="card coffee-card p-4">
+        <h2 class="h4 mb-3">Leave Your Review</h2>
+
+        <% if (communityErrors.length) { %>
+          <div class="alert alert-danger py-2 px-3">
+            <ul class="mb-0 ps-3">
+              <% communityErrors.forEach(function (error) { %>
+                <li><%= error.msg %></li>
+              <% }); %>
+            </ul>
+          </div>
+        <% } %>
+
+        <form action="/places/<%= place.anchorId %>/community-reviews" method="POST" novalidate>
+          <div class="mb-2">
+            <label class="form-label">Name</label>
+            <input type="text" class="form-control" name="author" maxlength="60" value="<%= communityValues.author %>" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Ordered</label>
+            <input type="text" class="form-control" name="ordered" maxlength="200" value="<%= communityValues.ordered %>" />
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col-6">
+              <label class="form-label">Cost *</label>
+              <input type="number" class="form-control" name="costRating" min="0" max="10" step="0.1" value="<%= communityValues.costRating %>" required />
+            </div>
+            <div class="col-6">
+              <label class="form-label">Taste *</label>
+              <input type="number" class="form-control" name="tasteRating" min="0" max="10" step="0.1" value="<%= communityValues.tasteRating %>" required />
+            </div>
+            <div class="col-6">
+              <label class="form-label">Location *</label>
+              <input type="number" class="form-control" name="locationRating" min="0" max="10" step="0.1" value="<%= communityValues.locationRating %>" required />
+            </div>
+            <div class="col-6">
+              <label class="form-label">Vibe *</label>
+              <input type="number" class="form-control" name="vibeRating" min="0" max="10" step="0.1" value="<%= communityValues.vibeRating %>" required />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" name="notes" rows="3" maxlength="500"><%= communityValues.notes %></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Submit Community Review</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="comments" class="container pb-5">
+  <div class="card coffee-card p-4">
+    <h2 class="h4 mb-3">Comments</h2>
+
+    <% if (place.comments.length) { %>
+      <ul class="list-unstyled comment-list mb-3">
+        <% place.comments.forEach(function (comment) { %>
+          <li class="comment-item">
+            <div class="d-flex justify-content-between align-items-start gap-2">
+              <div>
+                <span class="comment-author"><%= comment.author || "Anonymous" %></span>
+                <p class="comment-body mb-0"><%= comment.body %></p>
+              </div>
+              <% if (typeof user !== "undefined" && user) { %>
+                <form
+                  action="/places/<%= place.anchorId %>/comments/<%= comment._id %>?_method=DELETE"
+                  method="POST"
+                  onsubmit="return confirm('Delete this comment?');"
+                >
+                  <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Delete comment">Delete</button>
+                </form>
+              <% } %>
+            </div>
+          </li>
+        <% }); %>
+      </ul>
+    <% } else { %>
+      <p class="text-body-secondary">No comments yet. Be the first.</p>
+    <% } %>
+
+    <form action="/places/<%= place.anchorId %>/comments" method="POST" class="comment-form">
+      <input
+        type="text"
+        class="form-control form-control-sm mb-2"
+        name="author"
+        maxlength="60"
+        placeholder="Your name (optional)"
+      />
+      <div class="input-group input-group-sm">
+        <input
+          type="text"
+          class="form-control"
+          name="body"
+          maxlength="500"
+          placeholder="Add a comment"
+          required
+        />
+        <button type="submit" class="btn btn-outline-secondary">Post</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<%- include("partials/footer") %>

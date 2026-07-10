@@ -1,0 +1,27 @@
+<%- include("partials/header") %>
+
+<section class="container py-5">
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <h1 class="rankings-title mb-0">All Reviews</h1>
+    <span class="badge rounded-pill ranking-count">
+      <%= totalPlaces %> place<%= totalPlaces === 1 ? "" : "s" %>
+    </span>
+  </div>
+
+  <% if (totalPlaces === 0) { %>
+    <div class="text-center text-body-secondary py-5">
+      <p class="fs-5 mb-3">No coffee places yet.</p>
+      <% if (typeof user !== "undefined" && user) { %>
+        <a href="/submit" class="btn btn-primary">Be the first to add one</a>
+      <% } %>
+    </div>
+  <% } else { %>
+    <div class="row g-4">
+      <% places.forEach(function (place, index) { %>
+        <%- include("partials/place-card", { place: place, index: index }) %>
+      <% }); %>
+    </div>
+  <% } %>
+</section>
+
+<%- include("partials/footer") %>

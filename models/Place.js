@@ -33,6 +33,34 @@ const commentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+const communityReviewSchema = new mongoose.Schema(
+  {
+    author: {
+      type: String,
+      trim: true,
+      maxlength: [60, "Name must be 60 characters or fewer."],
+      default: "Anonymous",
+    },
+    ordered: {
+      type: String,
+      trim: true,
+      maxlength: [200, "What was ordered must be 200 characters or fewer."],
+      default: "",
+    },
+    costRating: ratingField("cost"),
+    tasteRating: ratingField("taste"),
+    locationRating: ratingField("location"),
+    vibeRating: ratingField("vibe"),
+    notes: {
+      type: String,
+      trim: true,
+      maxlength: [500, "Notes must be 500 characters or fewer."],
+      default: "",
+    },
+  },
+  { timestamps: true }
+);
+
 const placeSchema = new mongoose.Schema(
   {
     name: {
@@ -76,6 +104,7 @@ const placeSchema = new mongoose.Schema(
     },
     images: [imageSchema],
     comments: [commentSchema],
+    communityReviews: [communityReviewSchema],
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

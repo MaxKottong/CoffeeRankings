@@ -1,229 +1,68 @@
-<% var isEditing = typeof editingId !== "undefined" && editingId && String(editingId) === String(place._id); %>
-<% var ev = isEditing ? editValues : {
-  name: place.name,
-  location: place.location,
-  ordered: place.ordered,
-  costRating: place.costRating,
-  tasteRating: place.tasteRating,
-  locationRating: place.locationRating,
-  vibeRating: place.vibeRating,
-  notes: place.notes,
-}; %>
-<% var loggedIn = typeof user !== "undefined" && user; %>
 <div class="col-12 col-md-6 col-lg-4">
-  <div class="card h-100 shadow-sm coffee-card" id="place-<%= place._id %>">
-    <% if (place.images && place.images.length) { %>
-      <div id="carousel-<%= place._id %>" class="carousel slide coffee-carousel" data-bs-ride="false">
-        <div class="carousel-inner">
-          <% place.images.forEach(function (img, i) { %>
-            <div class="carousel-item<%= i === 0 ? " active" : "" %>">
-              <img
-                src="/places/<%= place._id %>/image/<%= img._id %>"
-                class="d-block w-100 coffee-photo"
-                alt="Photo of <%= place.name %>"
-                loading="lazy"
-              />
-            </div>
-          <% }); %>
-        </div>
-        <% if (place.images.length > 1) { %>
-          <button class="carousel-control-prev" type="button" data-bs-target="#carousel-<%= place._id %>" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Previous</span>
-          </button>
-          <button class="carousel-control-next" type="button" data-bs-target="#carousel-<%= place._id %>" data-bs-slide="next">
-            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Next</span>
-          </button>
-        <% } %>
-      </div>
+  <a class="card h-100 shadow-sm coffee-card coffee-card-link" id="place-<%= place.anchorId %>" href="/places/<%= place.anchorId %>">
+    <% if (place.image) { %>
+      <img
+        src="/places/<%= place.anchorId %>/image/<%= place.image._id %>"
+        class="d-block w-100 coffee-photo"
+        alt="Photo of <%= place.name %>"
+        loading="lazy"
+      />
     <% } %>
-    <div class="card-body d-flex flex-column">
-      <div class="view-mode d-flex flex-column flex-grow-1<%= isEditing ? " d-none" : "" %>" id="view-<%= place._id %>">
-        <div class="d-flex justify-content-between align-items-start mb-2">
-          <span class="rank-badge">Rank #<%= index + 1 %></span>
-          <span class="rating-pill" title="Overall rating out of 10">
-            <%= place.overallRating.toFixed(1) %><small>/10</small>
-          </span>
-        </div>
-        <h3 class="h5 card-title mb-1"><%= place.name %></h3>
-        <% if (place.location) { %>
-          <p class="text-body-secondary small mb-2"><%= place.location %></p>
-        <% } %>
-        <% if (place.ordered) { %>
-          <p class="small mb-2"><span class="fw-semibold">Ordered:</span> <%= place.ordered %></p>
-        <% } %>
-        <div class="row row-cols-2 g-2 mb-2 category-ratings">
-          <div class="col">
-            <div class="category-rating">
-              <span class="category-label">Cost</span>
-              <span class="category-score"><%= place.costRating.toFixed(1) %></span>
-            </div>
-          </div>
-          <div class="col">
-            <div class="category-rating">
-              <span class="category-label">Taste</span>
-              <span class="category-score"><%= place.tasteRating.toFixed(1) %></span>
-            </div>
-          </div>
-          <div class="col">
-            <div class="category-rating">
-              <span class="category-label">Location</span>
-              <span class="category-score"><%= place.locationRating.toFixed(1) %></span>
-            </div>
-          </div>
-          <div class="col">
-            <div class="category-rating">
-              <span class="category-label">Vibe</span>
-              <span class="category-score"><%= place.vibeRating.toFixed(1) %></span>
-            </div>
-          </div>
-        </div>
-        <% if (place.notes) { %>
-          <p class="card-text"><%= place.notes %></p>
-        <% } %>
 
-        <!-- Public comments -->
-        <div class="comments-section mt-3">
-          <h4 class="comments-title">
-            Comments
-            <span class="text-body-secondary">(<%= place.comments.length %>)</span>
-          </h4>
-          <% if (place.comments.length) { %>
-            <ul class="list-unstyled comment-list mb-2">
-              <% place.comments.forEach(function (comment) { %>
-                <li class="comment-item">
-                  <div class="d-flex justify-content-between align-items-start gap-2">
-                    <div>
-                      <span class="comment-author"><%= comment.author || "Anonymous" %></span>
-                      <p class="comment-body mb-0"><%= comment.body %></p>
-                    </div>
-                    <% if (loggedIn) { %>
-                      <form
-                        action="/places/<%= place._id %>/comments/<%= comment._id %>?_method=DELETE"
-                        method="POST"
-                        onsubmit="return confirm('Delete this comment?');"
-                      >
-                        <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Delete comment">✕</button>
-                      </form>
-                    <% } %>
-                  </div>
-                </li>
-              <% }); %>
+    <div class="card-body d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <span class="rank-badge">Rank #<%= index + 1 %></span>
+        <span class="rating-pill" title="Community rating out of 10">
+          <%= place.communityRating !== null ? place.communityRating.toFixed(1) : "-" %><small>/10</small>
+        </span>
+      </div>
+
+      <h3 class="h5 card-title mb-1"><%= place.name %></h3>
+      <% if (place.location) { %>
+        <p class="text-body-secondary small mb-3"><%= place.location %></p>
+      <% } %>
+
+      <div class="review-columns mb-3">
+        <section class="review-column">
+          <h4>Max</h4>
+          <% if (place.maxReview) { %>
+            <p class="review-ordered"><strong>Ordered:</strong> <%= place.maxReview.ordered || "-" %></p>
+            <ul class="review-metrics list-unstyled">
+              <li>Cost <span><%= place.maxReview.costRating.toFixed(1) %></span></li>
+              <li>Taste <span><%= place.maxReview.tasteRating.toFixed(1) %></span></li>
+              <li>Location <span><%= place.maxReview.locationRating.toFixed(1) %></span></li>
+              <li>Vibe <span><%= place.maxReview.vibeRating.toFixed(1) %></span></li>
+              <li>Overall <span><%= place.maxReview.overallRating.toFixed(1) %></span></li>
             </ul>
           <% } else { %>
-            <p class="text-body-secondary small mb-2">No comments yet. Be the first!</p>
+            <p class="text-body-secondary small">No review yet.</p>
           <% } %>
-          <form action="/places/<%= place._id %>/comments" method="POST" class="comment-form">
-            <input
-              type="text"
-              class="form-control form-control-sm mb-1"
-              name="author"
-              maxlength="60"
-              placeholder="Your name (optional)"
-            />
-            <div class="input-group input-group-sm">
-              <input
-                type="text"
-                class="form-control"
-                name="body"
-                maxlength="500"
-                placeholder="Add a public comment…"
-                required
-              />
-              <button type="submit" class="btn btn-outline-secondary">Post</button>
-            </div>
-          </form>
-        </div>
+        </section>
 
-        <% if (loggedIn) { %>
-          <div class="d-flex gap-2 mt-3">
-            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleEdit('<%= place._id %>')">Edit</button>
-            <form
-              action="/places/<%= place._id %>?_method=DELETE"
-              method="POST"
-              onsubmit="return confirm('Remove this place?');"
-            >
-              <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
-            </form>
-          </div>
-        <% } %>
+        <section class="review-column">
+          <h4>Margo</h4>
+          <% if (place.margoReview) { %>
+            <p class="review-ordered"><strong>Ordered:</strong> <%= place.margoReview.ordered || "-" %></p>
+            <ul class="review-metrics list-unstyled">
+              <li>Cost <span><%= place.margoReview.costRating.toFixed(1) %></span></li>
+              <li>Taste <span><%= place.margoReview.tasteRating.toFixed(1) %></span></li>
+              <li>Location <span><%= place.margoReview.locationRating.toFixed(1) %></span></li>
+              <li>Vibe <span><%= place.margoReview.vibeRating.toFixed(1) %></span></li>
+              <li>Overall <span><%= place.margoReview.overallRating.toFixed(1) %></span></li>
+            </ul>
+          <% } else { %>
+            <p class="text-body-secondary small">No review yet.</p>
+          <% } %>
+        </section>
       </div>
 
-      <div class="edit-mode<%= isEditing ? "" : " d-none" %>" id="edit-<%= place._id %>">
-        <% if (isEditing && editErrors && editErrors.length) { %>
-          <div class="alert alert-danger py-2 px-2 small mb-2">
-            <ul class="mb-0 ps-3">
-              <% editErrors.forEach(function (error) { %>
-                <li><%= error.msg %></li>
-              <% }); %>
-            </ul>
-          </div>
-        <% } %>
-
-        <% if (place.images && place.images.length) { %>
-          <label class="form-label small mb-1">Current photos</label>
-          <div class="d-flex flex-wrap gap-2 mb-2">
-            <% place.images.forEach(function (img) { %>
-              <div class="edit-thumb">
-                <img src="/places/<%= place._id %>/image/<%= img._id %>" alt="photo" />
-                <form
-                  action="/places/<%= place._id %>/image/<%= img._id %>?_method=DELETE"
-                  method="POST"
-                  onsubmit="return confirm('Remove this photo?');"
-                >
-                  <button type="submit" class="thumb-remove" title="Remove photo">✕</button>
-                </form>
-              </div>
-            <% }); %>
-          </div>
-        <% } %>
-
-        <form action="/places/<%= place._id %>?_method=PUT" method="POST" enctype="multipart/form-data">
-          <div class="mb-2">
-            <label class="form-label small mb-1">Name</label>
-            <input type="text" class="form-control form-control-sm" name="name" maxlength="120" value="<%= ev.name %>" required />
-          </div>
-          <div class="mb-2">
-            <label class="form-label small mb-1">Location</label>
-            <input type="text" class="form-control form-control-sm" name="location" maxlength="160" value="<%= ev.location %>" />
-          </div>
-          <div class="mb-2">
-            <label class="form-label small mb-1">What was ordered</label>
-            <input type="text" class="form-control form-control-sm" name="ordered" maxlength="200" value="<%= ev.ordered %>" />
-          </div>
-          <div class="row g-2 mb-2">
-            <div class="col-6">
-              <label class="form-label small mb-1">Cost (0-10)</label>
-              <input type="number" class="form-control form-control-sm" name="costRating" min="0" max="10" step="0.1" value="<%= ev.costRating %>" required />
-            </div>
-            <div class="col-6">
-              <label class="form-label small mb-1">Taste (0-10)</label>
-              <input type="number" class="form-control form-control-sm" name="tasteRating" min="0" max="10" step="0.1" value="<%= ev.tasteRating %>" required />
-            </div>
-            <div class="col-6">
-              <label class="form-label small mb-1">Location (0-10)</label>
-              <input type="number" class="form-control form-control-sm" name="locationRating" min="0" max="10" step="0.1" value="<%= ev.locationRating %>" required />
-            </div>
-            <div class="col-6">
-              <label class="form-label small mb-1">Vibe (0-10)</label>
-              <input type="number" class="form-control form-control-sm" name="vibeRating" min="0" max="10" step="0.1" value="<%= ev.vibeRating %>" required />
-            </div>
-          </div>
-          <div class="mb-2">
-            <label class="form-label small mb-1">Add photos</label>
-            <input type="file" class="form-control form-control-sm" name="images" accept="image/*" multiple />
-          </div>
-          <div class="mb-2">
-            <label class="form-label small mb-1">Notes</label>
-            <textarea class="form-control form-control-sm" name="notes" rows="2" maxlength="500"><%= ev.notes %></textarea>
-          </div>
-          <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-sm btn-primary">Save</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleEdit('<%= place._id %>')">Cancel</button>
-          </div>
-        </form>
+      <div class="community-summary mt-auto">
+        <p class="meta-label mb-1">Community Rating</p>
+        <p class="community-score">
+          <%= place.communityRating !== null ? place.communityRating.toFixed(1) + "/10" : "No ratings yet" %>
+        </p>
+        <p class="text-body-secondary small mb-0"><%= place.communityReviewCount %> community review<%= place.communityReviewCount === 1 ? "" : "s" %></p>
       </div>
     </div>
-  </div>
+  </a>
 </div>

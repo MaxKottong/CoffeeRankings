@@ -290,6 +290,16 @@ h4,
   transition: transform 220ms ease, box-shadow 220ms ease;
 }
 
+.coffee-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.coffee-card-link:hover {
+  color: inherit;
+}
+
 .coffee-card:hover {
   transform: translateY(-6px);
   box-shadow: 0 18px 30px rgba(56, 42, 35, 0.12) !important;
@@ -347,6 +357,109 @@ h4,
 .category-score {
   font-size: 0.9rem;
   font-weight: 700;
+}
+
+.review-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.review-column {
+  border: 1px solid rgba(111, 85, 70, 0.14);
+  border-radius: 0.75rem;
+  padding: 0.7rem;
+  background-color: #fbf6ef;
+}
+
+.review-column h4,
+.review-column h3 {
+  margin-bottom: 0.45rem;
+  font-size: 1.25rem;
+}
+
+.review-ordered {
+  margin-bottom: 0.5rem;
+  font-size: 0.86rem;
+}
+
+.review-metrics {
+  margin-bottom: 0;
+}
+
+.review-metrics li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px dashed rgba(111, 85, 70, 0.16);
+  padding: 0.23rem 0;
+}
+
+.review-metrics li span {
+  font-weight: 700;
+  color: #3d2f27;
+}
+
+.community-summary {
+  border-top: 1px solid rgba(111, 85, 70, 0.18);
+  padding-top: 0.8rem;
+}
+
+.community-summary.big {
+  border: 1px solid rgba(111, 85, 70, 0.2);
+  border-radius: 0.75rem;
+  padding: 0.9rem;
+  background-color: #fcf7ef;
+}
+
+.community-score {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+}
+
+.detail-shell {
+  background-color: var(--card);
+  border: 1px solid rgba(111, 85, 70, 0.15);
+  border-radius: 1rem;
+  padding: 1.2rem;
+}
+
+.detail-header {
+  margin-bottom: 1rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 330px 1fr;
+  gap: 1rem;
+}
+
+.detail-photo {
+  border-radius: 0.9rem;
+  overflow: hidden;
+  min-height: 250px;
+}
+
+.detail-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.community-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.community-item {
+  border: 1px solid rgba(111, 85, 70, 0.14);
+  border-radius: 0.7rem;
+  padding: 0.75rem;
+  background-color: #fbf7f0;
 }
 
 .comments-section {
@@ -519,6 +632,10 @@ h4,
     align-items: center;
     text-align: center;
   }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 767px) {
@@ -545,5 +662,9 @@ h4,
 
   .coffee-navbar .btn {
     width: 100%;
+  }
+
+  .review-columns {
+    grid-template-columns: 1fr;
   }
 }

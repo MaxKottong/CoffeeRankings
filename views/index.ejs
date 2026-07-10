@@ -1,15 +1,5 @@
 <%- include("partials/header") %>
 
-<%
-  var maxSection = sections.find(function (s) { return s.key === "max"; });
-  var margoSection = sections.find(function (s) { return s.key === "margo"; });
-  var featured =
-    (maxSection && maxSection.places && maxSection.places[0]) ||
-    (margoSection && margoSection.places && margoSection.places[0]) ||
-    (sections[0] && sections[0].places && sections[0].places[0]) ||
-    null;
-%>
-
 <section class="landing-hero">
   <div class="hero-wave hero-wave-top-1"></div>
   <div class="hero-wave hero-wave-top-2"></div>
@@ -17,11 +7,11 @@
   <div class="container hero-content">
     <p class="hero-kicker">Max &amp; Margo Coffee Reviews</p>
     <h1 class="hero-title">Honest reviews.<br />Better coffee.</h1>
-    <p class="hero-copy">Real ratings, real experiences, your next favorite cup.</p>
+    <p class="hero-copy">Your most recent coffee story, at a glance.</p>
     <% if (typeof user !== "undefined" && user) { %>
       <a href="/submit" class="btn btn-primary btn-lg">Share a Review</a>
     <% } else { %>
-      <a href="/#rankings" class="btn btn-primary btn-lg">Browse Reviews</a>
+      <a href="/reviews" class="btn btn-primary btn-lg">Browse Reviews</a>
     <% } %>
   </div>
 </section>
@@ -35,40 +25,47 @@
 </section>
 
 <div class="container pb-5">
-  <% if (featured) { %>
+  <% if (latestPlace) { %>
     <article class="featured-card">
       <aside class="featured-meta">
         <div class="meta-block">
           <p class="meta-label">Origin</p>
-          <p class="meta-value"><%= featured.location || "Unknown" %></p>
+          <p class="meta-value"><%= latestPlace.location || "Unknown" %></p>
         </div>
         <div class="meta-block">
-          <p class="meta-label">Vibe</p>
-          <p class="meta-value"><%= featured.vibeRating.toFixed(1) %>/10</p>
+          <p class="meta-label">Latest By</p>
+          <p class="meta-value"><%= latestPlace.latestReview && latestPlace.latestReview.ownerName ? latestPlace.latestReview.ownerName : "Max or Margo" %></p>
         </div>
         <div class="meta-block">
-          <p class="meta-label">Taste</p>
-          <p class="meta-value"><%= featured.tasteRating.toFixed(1) %>/10</p>
+          <p class="meta-label">Community</p>
+          <p class="meta-value">
+            <%= latestPlace.communityRating !== null ? latestPlace.communityRating.toFixed(1) + "/10" : "No ratings yet" %>
+          </p>
         </div>
         <div class="meta-block">
-          <p class="meta-label">Roast Level</p>
-          <p class="meta-value"><%= featured.costRating >= 7 ? "Premium" : "Balanced" %></p>
+          <p class="meta-label">Total Reviews</p>
+          <p class="meta-value"><%= latestPlace.communityReviewCount %> community</p>
         </div>
       </aside>
       <div class="featured-body">
-        <h2><%= featured.name %></h2>
-        <p class="featured-location"><%= featured.location || "Location not listed" %></p>
-        <p class="featured-notes"><%= featured.notes || "No notes yet for this place." %></p>
+        <h2><%= latestPlace.name %></h2>
+        <p class="featured-location"><%= latestPlace.location || "Location not listed" %></p>
+        <p class="featured-notes">
+          <%= latestPlace.latestReview && latestPlace.latestReview.notes ? latestPlace.latestReview.notes : "No notes yet for this place." %>
+        </p>
         <div class="featured-rating-box">
-          <p class="meta-label mb-1">Overall Rating</p>
-          <p class="featured-score"><%= featured.overallRating.toFixed(1) %>/10</p>
+          <p class="meta-label mb-1">Latest Score</p>
+          <p class="featured-score">
+            <%= latestPlace.latestReview ? latestPlace.latestReview.overallRating.toFixed(1) + "/10" : "-" %>
+          </p>
         </div>
+        <a href="/places/<%= latestPlace.anchorId %>" class="btn btn-outline-secondary mt-3">View Full Review</a>
       </div>
       <div class="featured-image-wrap">
-        <% if (featured.images && featured.images.length) { %>
+        <% if (latestPlace.image) { %>
           <img
-            src="/places/<%= featured._id %>/image/<%= featured.images[0]._id %>"
-            alt="Photo of <%= featured.name %>"
+            src="/places/<%= latestPlace.anchorId %>/image/<%= latestPlace.image._id %>"
+            alt="Photo of <%= latestPlace.name %>"
             class="featured-image"
             loading="lazy"
           />
@@ -77,41 +74,15 @@
         <% } %>
       </div>
     </article>
-  <% } %>
-
-  <section id="rankings" class="rankings-shell py-4">
-    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
-      <h2 class="rankings-title mb-0">The Rankings</h2>
-      <span class="badge rounded-pill ranking-count">
-        <%= totalPlaces %> place<%= totalPlaces === 1 ? "" : "s" %>
-      </span>
-    </div>
-
-    <% if (totalPlaces === 0) { %>
-      <div class="text-center text-body-secondary py-5">
-        <p class="fs-5 mb-3">No coffee places yet.</p>
-        <a href="/submit" class="btn btn-primary">Be the first to add one</a>
+  <% } else { %>
+    <article class="featured-card">
+      <div class="featured-body">
+        <h2>No reviews yet</h2>
+        <p class="featured-notes">Once Max or Margo posts a review, it will appear here automatically.</p>
+        <a href="/reviews" class="btn btn-outline-secondary mt-3">Open Reviews Page</a>
       </div>
-    <% } else { %>
-      <% sections.forEach(function (section) { %>
-        <section class="ranking-section mb-5" id="<%= section.key %>-reviews">
-          <div class="section-heading d-flex align-items-center gap-2 mb-3">
-            <h3 class="h4 mb-0"><%= section.title %></h3>
-            <span class="badge rounded-pill section-count"><%= section.places.length %></span>
-          </div>
-          <% if (section.places.length === 0) { %>
-            <p class="text-body-secondary">No places ranked here yet.</p>
-          <% } else { %>
-            <div class="row g-4">
-              <% section.places.forEach(function (place, index) { %>
-                <%- include("partials/place-card", { place: place, index: index }) %>
-              <% }); %>
-            </div>
-          <% } %>
-        </section>
-      <% }); %>
-    <% } %>
-  </section>
+    </article>
+  <% } %>
 </div>
 
 <section id="about" class="about-band py-5">
@@ -141,12 +112,5 @@
     </div>
   </div>
 </section>
-
-<script>
-  function toggleEdit(id) {
-    document.getElementById("view-" + id).classList.toggle("d-none");
-    document.getElementById("edit-" + id).classList.toggle("d-none");
-  }
-</script>
 
 <%- include("partials/footer") %>
