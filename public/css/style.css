@@ -459,12 +459,15 @@ h4,
 }
 
 .mini-bean {
-  width: 8px;
-  height: 6px;
+  width: 12px;
+  height: 9px;
   border-radius: 50% / 58%;
   background: #d8c8b3;
   border: 1px solid rgba(111, 85, 70, 0.25);
   position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  flex: 0 0 auto;
 }
 
 .mini-bean::after {
@@ -680,13 +683,14 @@ h4,
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .bean-rating-buttons {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.2rem;
+  flex-wrap: nowrap;
+  gap: 0.12rem;
+  white-space: nowrap;
 }
 
 .bean-btn {
