@@ -35,16 +35,9 @@
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navContent">
-          <form class="d-flex ms-lg-3 me-lg-2 nav-search-form" role="search" action="/reviews" method="GET">
-            <input
-              class="form-control form-control-sm"
-              type="search"
-              name="q"
-              placeholder="Search coffee..."
-              aria-label="Search places"
-            />
-            <button class="btn btn-sm btn-outline-secondary" type="submit">Go</button>
-          </form>
+          <% if (typeof user !== "undefined" && user && user.isAdmin) { %>
+            <a class="btn btn-sm btn-primary ms-lg-3 me-lg-2 mt-2 mt-lg-0" href="/submit">Submit a Place</a>
+          <% } %>
           <ul class="navbar-nav ms-auto align-items-lg-center">
             <li class="nav-item">
               <a class="nav-link" href="/reviews">Reviews</a>
@@ -56,15 +49,22 @@
               <a class="nav-link" href="/contact">Contact</a>
             </li>
             <% if (typeof user !== "undefined" && user) { %>
-              <% if (user.isAdmin) { %>
-                <li class="nav-item">
-                  <a class="btn btn-sm btn-primary ms-lg-2 mt-2 mt-lg-0" href="/submit">Submit a Place</a>
-                </li>
-              <% } %>
               <li class="nav-item">
                 <a class="nav-link nav-profile-pill" href="/profile" aria-label="Open profile">
                   <span class="profile-pill-label">Profile</span>
                 </a>
+              </li>
+              <li class="nav-item">
+                <form class="d-flex nav-search-form nav-search-inline" role="search" action="/reviews" method="GET">
+                  <input
+                    class="form-control form-control-sm"
+                    type="search"
+                    name="q"
+                    placeholder="Search coffee..."
+                    aria-label="Search places"
+                  />
+                  <button class="btn btn-sm btn-outline-secondary" type="submit">Go</button>
+                </form>
               </li>
               <li class="nav-item">
                 <form action="/logout" method="POST" class="d-inline">
@@ -72,6 +72,18 @@
                 </form>
               </li>
             <% } else { %>
+              <li class="nav-item">
+                <form class="d-flex nav-search-form nav-search-inline" role="search" action="/reviews" method="GET">
+                  <input
+                    class="form-control form-control-sm"
+                    type="search"
+                    name="q"
+                    placeholder="Search coffee..."
+                    aria-label="Search places"
+                  />
+                  <button class="btn btn-sm btn-outline-secondary" type="submit">Go</button>
+                </form>
+              </li>
               <li class="nav-item">
                 <a class="btn btn-sm btn-outline-secondary ms-lg-2 mt-2 mt-lg-0" href="/login">Log In</a>
               </li>

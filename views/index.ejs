@@ -62,7 +62,7 @@
           <% if (latestPlace.communityRating !== null) { %>
             <p class="review-stars mb-1" aria-label="Community rating <%= latestPlace.communityRating.toFixed(1) %> out of 10">
               <% for (let i = 1; i <= 5; i += 1) { %>
-                <span class="review-star <%= i <= communityStars ? "filled" : "" %>"><%= i <= communityStars ? "&#9733;" : "&#9734;" %></span>
+                <span class="review-star <%= i <= communityStars ? "filled" : "" %>"><%- i <= communityStars ? "&#9733;" : "&#9734;" %></span>
               <% } %>
             </p>
             <p class="small text-body-secondary mb-0">Based on <%= latestPlace.communityReviewCount %> community review<%= latestPlace.communityReviewCount === 1 ? "" : "s" %></p>
