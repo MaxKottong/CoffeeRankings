@@ -1,51 +1,146 @@
 <%- include("partials/header") %>
 
-<section class="hero text-white text-center">
-  <div class="container py-5">
-    <h1 class="display-4 fw-bold mb-3">Find your next favorite cup ☕</h1>
-    <p class="lead mb-4">
-      Discover and rate the best coffee places around. Ranked by Max &amp; Margo,
-      out of 10.
-    </p>
-    <a href="/submit" class="btn btn-light btn-lg fw-semibold">
-      Rate a Coffee Place
-    </a>
+<%
+  var maxSection = sections.find(function (s) { return s.key === "max"; });
+  var margoSection = sections.find(function (s) { return s.key === "margo"; });
+  var featured =
+    (maxSection && maxSection.places && maxSection.places[0]) ||
+    (margoSection && margoSection.places && margoSection.places[0]) ||
+    (sections[0] && sections[0].places && sections[0].places[0]) ||
+    null;
+%>
+
+<section class="landing-hero">
+  <div class="hero-wave hero-wave-top-1"></div>
+  <div class="hero-wave hero-wave-top-2"></div>
+  <div class="hero-wave hero-wave-top-3"></div>
+  <div class="container hero-content">
+    <p class="hero-kicker">Max &amp; Margo Coffee Reviews</p>
+    <h1 class="hero-title">Honest reviews.<br />Better coffee.</h1>
+    <p class="hero-copy">Real ratings, real experiences, your next favorite cup.</p>
+    <% if (typeof user !== "undefined" && user) { %>
+      <a href="/submit" class="btn btn-primary btn-lg">Share a Review</a>
+    <% } else { %>
+      <a href="/#rankings" class="btn btn-primary btn-lg">Browse Reviews</a>
+    <% } %>
   </div>
 </section>
 
-<div class="container py-5">
-  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
-    <h2 class="h3 mb-0">The Rankings</h2>
-    <span class="badge text-bg-secondary rounded-pill">
-      <%= totalPlaces %> place<%= totalPlaces === 1 ? "" : "s" %>
-    </span>
+<section class="container featured-wrap">
+  <div class="section-title-row">
+    <span class="line"></span>
+    <p class="section-title">Latest Review</p>
+    <span class="line"></span>
   </div>
+</section>
 
-  <% if (totalPlaces === 0) { %>
-    <div class="text-center text-body-secondary py-5">
-      <p class="fs-5 mb-3">No coffee places yet.</p>
-      <a href="/submit" class="btn btn-primary">Be the first to add one</a>
-    </div>
-  <% } else { %>
-    <% sections.forEach(function (section) { %>
-      <section class="ranking-section mb-5">
-        <div class="section-heading d-flex align-items-center gap-2 mb-3">
-          <h3 class="h4 mb-0"><%= section.title %></h3>
-          <span class="badge text-bg-light rounded-pill"><%= section.places.length %></span>
+<div class="container pb-5">
+  <% if (featured) { %>
+    <article class="featured-card">
+      <aside class="featured-meta">
+        <div class="meta-block">
+          <p class="meta-label">Origin</p>
+          <p class="meta-value"><%= featured.location || "Unknown" %></p>
         </div>
-        <% if (section.places.length === 0) { %>
-          <p class="text-body-secondary">No places ranked here yet.</p>
+        <div class="meta-block">
+          <p class="meta-label">Vibe</p>
+          <p class="meta-value"><%= featured.vibeRating.toFixed(1) %>/10</p>
+        </div>
+        <div class="meta-block">
+          <p class="meta-label">Taste</p>
+          <p class="meta-value"><%= featured.tasteRating.toFixed(1) %>/10</p>
+        </div>
+        <div class="meta-block">
+          <p class="meta-label">Roast Level</p>
+          <p class="meta-value"><%= featured.costRating >= 7 ? "Premium" : "Balanced" %></p>
+        </div>
+      </aside>
+      <div class="featured-body">
+        <h2><%= featured.name %></h2>
+        <p class="featured-location"><%= featured.location || "Location not listed" %></p>
+        <p class="featured-notes"><%= featured.notes || "No notes yet for this place." %></p>
+        <div class="featured-rating-box">
+          <p class="meta-label mb-1">Overall Rating</p>
+          <p class="featured-score"><%= featured.overallRating.toFixed(1) %>/10</p>
+        </div>
+      </div>
+      <div class="featured-image-wrap">
+        <% if (featured.images && featured.images.length) { %>
+          <img
+            src="/places/<%= featured._id %>/image/<%= featured.images[0]._id %>"
+            alt="Photo of <%= featured.name %>"
+            class="featured-image"
+            loading="lazy"
+          />
         <% } else { %>
-          <div class="row g-4">
-            <% section.places.forEach(function (place, index) { %>
-              <%- include("partials/place-card", { place: place, index: index }) %>
-            <% }); %>
-          </div>
+          <div class="featured-image featured-image-placeholder">No photo yet</div>
         <% } %>
-      </section>
-    <% }); %>
+      </div>
+    </article>
   <% } %>
+
+  <section id="rankings" class="rankings-shell py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+      <h2 class="rankings-title mb-0">The Rankings</h2>
+      <span class="badge rounded-pill ranking-count">
+        <%= totalPlaces %> place<%= totalPlaces === 1 ? "" : "s" %>
+      </span>
+    </div>
+
+    <% if (totalPlaces === 0) { %>
+      <div class="text-center text-body-secondary py-5">
+        <p class="fs-5 mb-3">No coffee places yet.</p>
+        <a href="/submit" class="btn btn-primary">Be the first to add one</a>
+      </div>
+    <% } else { %>
+      <% sections.forEach(function (section) { %>
+        <section class="ranking-section mb-5" id="<%= section.key %>-reviews">
+          <div class="section-heading d-flex align-items-center gap-2 mb-3">
+            <h3 class="h4 mb-0"><%= section.title %></h3>
+            <span class="badge rounded-pill section-count"><%= section.places.length %></span>
+          </div>
+          <% if (section.places.length === 0) { %>
+            <p class="text-body-secondary">No places ranked here yet.</p>
+          <% } else { %>
+            <div class="row g-4">
+              <% section.places.forEach(function (place, index) { %>
+                <%- include("partials/place-card", { place: place, index: index }) %>
+              <% }); %>
+            </div>
+          <% } %>
+        </section>
+      <% }); %>
+    <% } %>
+  </section>
 </div>
+
+<section id="about" class="about-band py-5">
+  <div class="container">
+    <div class="row g-4 text-center text-lg-start">
+      <div class="col-12 col-lg-4">
+        <div class="about-item">
+          <div class="about-icon">01</div>
+          <h3>Find</h3>
+          <p>Discover top-rated coffee spots near you and around the world.</p>
+        </div>
+      </div>
+      <div class="col-12 col-lg-4">
+        <div class="about-item">
+          <div class="about-icon">02</div>
+          <h3>Review</h3>
+          <p>Share your experience and help others find their perfect cup.</p>
+        </div>
+      </div>
+      <div class="col-12 col-lg-4">
+        <div class="about-item">
+          <div class="about-icon">03</div>
+          <h3>Enjoy</h3>
+          <p>Life is too short for bad coffee. Sip happy and stay caffeinated.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <script>
   function toggleEdit(id) {
