@@ -103,6 +103,19 @@ async function ensureAdminUsers() {
   }
 }
 
+async function ensureUserIndexes() {
+  const indexes = await User.collection.indexes();
+  const usernameIndex = indexes.find((idx) => idx.name === "username_1");
+
+  // Older deployments may have a sparse username index. Remove it so
+  // syncIndexes can create the strict unique index without conflicts.
+  if (usernameIndex && usernameIndex.sparse) {
+    await User.collection.dropIndex("username_1");
+  }
+
+  await User.syncIndexes();
+}
+
 // View engine
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -150,9 +163,9 @@ mongoose
   .connect(MONGODB_URI)
   .then(async () => {
     console.log("Connected to MongoDB.");
-    await User.syncIndexes();
     await ensureUsernames();
     await ensureAdminUsers();
+    await ensureUserIndexes();
     app.listen(PORT, () => {
       console.log(`Coffee Ratings running at http://localhost:${PORT}`);
     });
