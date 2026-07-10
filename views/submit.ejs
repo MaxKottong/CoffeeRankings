@@ -42,92 +42,171 @@
           />
         </div>
 
-        <div class="mb-3">
-          <label for="ordered" class="form-label">What was ordered</label>
-          <input
-            type="text"
-            class="form-control"
-            id="ordered"
-            name="ordered"
-            maxlength="200"
-            placeholder="e.g. Oat flat white and a croissant"
-            value="<%= values.ordered %>"
-          />
-        </div>
+        <% if (isAdmin) { %>
+          <div class="row g-3 mb-3">
+            <div class="col-12">
+              <h2 class="h5 mb-2">Max Review</h2>
+            </div>
+            <div class="col-12">
+              <label for="maxOrdered" class="form-label">What Max ordered</label>
+              <input
+                type="text"
+                class="form-control"
+                id="maxOrdered"
+                name="maxOrdered"
+                maxlength="200"
+                value="<%= values.maxOrdered %>"
+              />
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="maxCostRating" class="form-label">Max Cost</label>
+              <input type="number" class="form-control" id="maxCostRating" name="maxCostRating" min="0" max="10" step="0.1" value="<%= values.maxCostRating %>" />
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="maxTasteRating" class="form-label">Max Taste</label>
+              <input type="number" class="form-control" id="maxTasteRating" name="maxTasteRating" min="0" max="10" step="0.1" value="<%= values.maxTasteRating %>" />
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="maxLocationRating" class="form-label">Max Location</label>
+              <input type="number" class="form-control" id="maxLocationRating" name="maxLocationRating" min="0" max="10" step="0.1" value="<%= values.maxLocationRating %>" />
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="maxVibeRating" class="form-label">Max Vibe</label>
+              <input type="number" class="form-control" id="maxVibeRating" name="maxVibeRating" min="0" max="10" step="0.1" value="<%= values.maxVibeRating %>" />
+            </div>
+            <div class="col-12">
+              <label for="maxNotes" class="form-label">Max Notes</label>
+              <textarea class="form-control" id="maxNotes" name="maxNotes" rows="2" maxlength="500"><%= values.maxNotes %></textarea>
+            </div>
+          </div>
 
-        <div class="row g-3 mb-3">
-          <div class="col-6 col-md-3">
-            <label for="costRating" class="form-label">Cost *</label>
+          <div class="row g-3 mb-3">
+            <div class="col-12">
+              <h2 class="h5 mb-2">Margo Review</h2>
+            </div>
+            <div class="col-12">
+              <label for="margoOrdered" class="form-label">What Margo ordered</label>
+              <input
+                type="text"
+                class="form-control"
+                id="margoOrdered"
+                name="margoOrdered"
+                maxlength="200"
+                value="<%= values.margoOrdered %>"
+              />
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="margoCostRating" class="form-label">Margo Cost</label>
+              <input type="number" class="form-control" id="margoCostRating" name="margoCostRating" min="0" max="10" step="0.1" value="<%= values.margoCostRating %>" />
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="margoTasteRating" class="form-label">Margo Taste</label>
+              <input type="number" class="form-control" id="margoTasteRating" name="margoTasteRating" min="0" max="10" step="0.1" value="<%= values.margoTasteRating %>" />
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="margoLocationRating" class="form-label">Margo Location</label>
+              <input type="number" class="form-control" id="margoLocationRating" name="margoLocationRating" min="0" max="10" step="0.1" value="<%= values.margoLocationRating %>" />
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="margoVibeRating" class="form-label">Margo Vibe</label>
+              <input type="number" class="form-control" id="margoVibeRating" name="margoVibeRating" min="0" max="10" step="0.1" value="<%= values.margoVibeRating %>" />
+            </div>
+            <div class="col-12">
+              <label for="margoNotes" class="form-label">Margo Notes</label>
+              <textarea class="form-control" id="margoNotes" name="margoNotes" rows="2" maxlength="500"><%= values.margoNotes %></textarea>
+            </div>
+            <div class="col-12">
+              <div class="form-text">Admins can submit Max and Margo in one action.</div>
+            </div>
+          </div>
+        <% } else { %>
+          <div class="mb-3">
+            <label for="ordered" class="form-label">What was ordered</label>
             <input
-              type="number"
+              type="text"
               class="form-control"
-              id="costRating"
-              name="costRating"
-              min="0"
-              max="10"
-              step="0.1"
-              value="<%= values.costRating %>"
-              required
+              id="ordered"
+              name="ordered"
+              maxlength="200"
+              placeholder="e.g. Oat flat white and a croissant"
+              value="<%= values.ordered %>"
             />
           </div>
-          <div class="col-6 col-md-3">
-            <label for="tasteRating" class="form-label">Taste *</label>
-            <input
-              type="number"
-              class="form-control"
-              id="tasteRating"
-              name="tasteRating"
-              min="0"
-              max="10"
-              step="0.1"
-              value="<%= values.tasteRating %>"
-              required
-            />
-          </div>
-          <div class="col-6 col-md-3">
-            <label for="locationRating" class="form-label">Location *</label>
-            <input
-              type="number"
-              class="form-control"
-              id="locationRating"
-              name="locationRating"
-              min="0"
-              max="10"
-              step="0.1"
-              value="<%= values.locationRating %>"
-              required
-            />
-          </div>
-          <div class="col-6 col-md-3">
-            <label for="vibeRating" class="form-label">Vibe *</label>
-            <input
-              type="number"
-              class="form-control"
-              id="vibeRating"
-              name="vibeRating"
-              min="0"
-              max="10"
-              step="0.1"
-              value="<%= values.vibeRating %>"
-              required
-            />
-          </div>
-          <div class="col-12">
-            <div class="form-text">Rate each category from 0 to 10. The overall score is their average.</div>
-          </div>
-        </div>
 
-        <div class="mb-3">
-          <label for="notes" class="form-label">Notes</label>
-          <textarea
-            class="form-control"
-            id="notes"
-            name="notes"
-            rows="3"
-            maxlength="500"
-            placeholder="What did you think?"
-          ><%= values.notes %></textarea>
-        </div>
+          <div class="row g-3 mb-3">
+            <div class="col-6 col-md-3">
+              <label for="costRating" class="form-label">Cost *</label>
+              <input
+                type="number"
+                class="form-control"
+                id="costRating"
+                name="costRating"
+                min="0"
+                max="10"
+                step="0.1"
+                value="<%= values.costRating %>"
+                required
+              />
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="tasteRating" class="form-label">Taste *</label>
+              <input
+                type="number"
+                class="form-control"
+                id="tasteRating"
+                name="tasteRating"
+                min="0"
+                max="10"
+                step="0.1"
+                value="<%= values.tasteRating %>"
+                required
+              />
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="locationRating" class="form-label">Location *</label>
+              <input
+                type="number"
+                class="form-control"
+                id="locationRating"
+                name="locationRating"
+                min="0"
+                max="10"
+                step="0.1"
+                value="<%= values.locationRating %>"
+                required
+              />
+            </div>
+            <div class="col-6 col-md-3">
+              <label for="vibeRating" class="form-label">Vibe *</label>
+              <input
+                type="number"
+                class="form-control"
+                id="vibeRating"
+                name="vibeRating"
+                min="0"
+                max="10"
+                step="0.1"
+                value="<%= values.vibeRating %>"
+                required
+              />
+            </div>
+            <div class="col-12">
+              <div class="form-text">Rate each category from 0 to 10. The overall score is their average.</div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="notes" class="form-label">Notes</label>
+            <textarea
+              class="form-control"
+              id="notes"
+              name="notes"
+              rows="3"
+              maxlength="500"
+              placeholder="What did you think?"
+            ><%= values.notes %></textarea>
+          </div>
+        <% } %>
 
         <div class="mb-3">
           <label for="images" class="form-label">Photos</label>

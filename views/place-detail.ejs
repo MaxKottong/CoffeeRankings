@@ -9,6 +9,14 @@
     <div class="detail-header">
       <h1 class="mb-1"><%= place.name %></h1>
       <p class="text-body-secondary mb-0"><%= place.location || "Location not listed" %></p>
+      <% if (typeof user !== "undefined" && user && user.isAdmin) { %>
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleCriticEdit()">Edit Max + Margo</button>
+          <form action="/places/<%= place.anchorId %>/consolidated?_method=DELETE" method="POST" onsubmit="return confirm('Delete this place for both Max and Margo?');">
+            <button type="submit" class="btn btn-sm btn-outline-danger">Delete Place</button>
+          </form>
+        </div>
+      <% } %>
     </div>
 
     <div class="detail-grid">
@@ -72,6 +80,70 @@
           </p>
           <p class="text-body-secondary small mb-0"><%= place.communityReviewCount %> community review<%= place.communityReviewCount === 1 ? "" : "s" %></p>
         </div>
+
+        <% if (typeof user !== "undefined" && user && user.isAdmin) { %>
+          <div id="critic-edit-panel" class="card coffee-card p-3 mt-3<%= criticErrors.length ? "" : " d-none" %>">
+            <h2 class="h5 mb-3">Edit Max + Margo Reviews</h2>
+            <% if (criticErrors.length) { %>
+              <div class="alert alert-danger py-2 px-3">
+                <ul class="mb-0 ps-3">
+                  <% criticErrors.forEach(function (error) { %>
+                    <li><%= error.msg %></li>
+                  <% }); %>
+                </ul>
+              </div>
+            <% } %>
+
+            <form action="/places/<%= place.anchorId %>/critics?_method=PUT" method="POST" enctype="multipart/form-data" novalidate>
+              <div class="row g-2 mb-2">
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Place Name</label>
+                  <input type="text" class="form-control" name="name" maxlength="120" value="<%= criticValues.name %>" required />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Location</label>
+                  <input type="text" class="form-control" name="location" maxlength="160" value="<%= criticValues.location %>" />
+                </div>
+              </div>
+
+              <div class="row g-2 mb-3">
+                <div class="col-12"><h3 class="h6 mb-1">Max</h3></div>
+                <div class="col-12">
+                  <label class="form-label">Ordered</label>
+                  <input type="text" class="form-control" name="maxOrdered" maxlength="200" value="<%= criticValues.maxOrdered %>" />
+                </div>
+                <div class="col-6 col-md-3"><input type="number" class="form-control" name="maxCostRating" min="0" max="10" step="0.1" value="<%= criticValues.maxCostRating %>" placeholder="Cost" /></div>
+                <div class="col-6 col-md-3"><input type="number" class="form-control" name="maxTasteRating" min="0" max="10" step="0.1" value="<%= criticValues.maxTasteRating %>" placeholder="Taste" /></div>
+                <div class="col-6 col-md-3"><input type="number" class="form-control" name="maxLocationRating" min="0" max="10" step="0.1" value="<%= criticValues.maxLocationRating %>" placeholder="Location" /></div>
+                <div class="col-6 col-md-3"><input type="number" class="form-control" name="maxVibeRating" min="0" max="10" step="0.1" value="<%= criticValues.maxVibeRating %>" placeholder="Vibe" /></div>
+                <div class="col-12"><textarea class="form-control" name="maxNotes" rows="2" maxlength="500" placeholder="Max notes"><%= criticValues.maxNotes %></textarea></div>
+              </div>
+
+              <div class="row g-2 mb-3">
+                <div class="col-12"><h3 class="h6 mb-1">Margo</h3></div>
+                <div class="col-12">
+                  <label class="form-label">Ordered</label>
+                  <input type="text" class="form-control" name="margoOrdered" maxlength="200" value="<%= criticValues.margoOrdered %>" />
+                </div>
+                <div class="col-6 col-md-3"><input type="number" class="form-control" name="margoCostRating" min="0" max="10" step="0.1" value="<%= criticValues.margoCostRating %>" placeholder="Cost" /></div>
+                <div class="col-6 col-md-3"><input type="number" class="form-control" name="margoTasteRating" min="0" max="10" step="0.1" value="<%= criticValues.margoTasteRating %>" placeholder="Taste" /></div>
+                <div class="col-6 col-md-3"><input type="number" class="form-control" name="margoLocationRating" min="0" max="10" step="0.1" value="<%= criticValues.margoLocationRating %>" placeholder="Location" /></div>
+                <div class="col-6 col-md-3"><input type="number" class="form-control" name="margoVibeRating" min="0" max="10" step="0.1" value="<%= criticValues.margoVibeRating %>" placeholder="Vibe" /></div>
+                <div class="col-12"><textarea class="form-control" name="margoNotes" rows="2" maxlength="500" placeholder="Margo notes"><%= criticValues.margoNotes %></textarea></div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Add photos</label>
+                <input type="file" class="form-control" name="images" accept="image/*" multiple />
+              </div>
+
+              <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary">Save Changes</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleCriticEdit()">Cancel</button>
+              </div>
+            </form>
+          </div>
+        <% } %>
       </div>
     </div>
   </article>
@@ -103,6 +175,11 @@
                 </div>
                 <% if (review.notes) { %>
                   <p class="mb-0"><%= review.notes %></p>
+                <% } %>
+                <% if (typeof user !== "undefined" && user && user.isAdmin) { %>
+                  <form action="/places/<%= place.anchorId %>/community-reviews/<%= review._id %>?_method=DELETE" method="POST" class="mt-2" onsubmit="return confirm('Delete this community review?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete Review</button>
+                  </form>
                 <% } %>
               </article>
             <% }); %>
@@ -176,7 +253,7 @@
                 <span class="comment-author"><%= comment.author || "Anonymous" %></span>
                 <p class="comment-body mb-0"><%= comment.body %></p>
               </div>
-              <% if (typeof user !== "undefined" && user) { %>
+              <% if (typeof user !== "undefined" && user && user.isAdmin) { %>
                 <form
                   action="/places/<%= place.anchorId %>/comments/<%= comment._id %>?_method=DELETE"
                   method="POST"
@@ -215,5 +292,13 @@
     </form>
   </div>
 </section>
+
+<script>
+  function toggleCriticEdit() {
+    var panel = document.getElementById("critic-edit-panel");
+    if (!panel) return;
+    panel.classList.toggle("d-none");
+  }
+</script>
 
 <%- include("partials/footer") %>

@@ -56,10 +56,10 @@
         <div class="featured-rating-box">
           <p class="meta-label mb-1">Latest Score</p>
           <p class="featured-score">
-            <%= latestPlace.latestReview ? latestPlace.latestReview.overallRating.toFixed(1) + "/10" : "-" %>
+            <%= latestPlace.criticsAverage !== null ? latestPlace.criticsAverage.toFixed(1) + "/10" : "-" %>
           </p>
+          <a href="/places/<%= latestPlace.anchorId %>" class="btn btn-outline-secondary mt-3">View Full Review</a>
         </div>
-        <a href="/places/<%= latestPlace.anchorId %>" class="btn btn-outline-secondary mt-3">View Full Review</a>
       </div>
       <div class="featured-image-wrap">
         <% if (latestPlace.image) { %>

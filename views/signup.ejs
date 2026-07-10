@@ -1,0 +1,75 @@
+<%- include("partials/header") %>
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+      <h1 class="h3 mb-4 text-center">Sign Up</h1>
+
+      <% if (error) { %>
+        <div class="alert alert-danger"><%= error %></div>
+      <% } %>
+
+      <form action="/signup" method="POST" class="card shadow-sm p-4" novalidate>
+        <div class="mb-3">
+          <label for="name" class="form-label">Name</label>
+          <input
+            type="text"
+            class="form-control"
+            id="name"
+            name="name"
+            maxlength="80"
+            value="<%= values.name %>"
+            required
+          />
+        </div>
+
+        <div class="mb-3">
+          <label for="email" class="form-label">Email</label>
+          <input
+            type="email"
+            class="form-control"
+            id="email"
+            name="email"
+            autocomplete="username"
+            value="<%= values.email %>"
+            required
+          />
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label">Password</label>
+          <input
+            type="password"
+            class="form-control"
+            id="password"
+            name="password"
+            minlength="8"
+            autocomplete="new-password"
+            required
+          />
+        </div>
+
+        <div class="mb-3">
+          <label for="confirmPassword" class="form-label">Confirm Password</label>
+          <input
+            type="password"
+            class="form-control"
+            id="confirmPassword"
+            name="confirmPassword"
+            minlength="8"
+            autocomplete="new-password"
+            required
+          />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Create Account</button>
+        <p class="small text-body-secondary mt-3 mb-0">
+          Already have an account?
+          <a href="/login">Log in</a>
+        </p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include("partials/footer") %>
