@@ -17,6 +17,8 @@ const MONGODB_URI =
   process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/coffee_ratings";
 const SESSION_SECRET =
   process.env.SESSION_SECRET || "coffee-ratings-dev-secret-change-me";
+const SHOULD_SYNC_USER_INDEXES =
+  String(process.env.SYNC_USER_INDEXES || "").toLowerCase() === "true";
 
 // Run index migrations manually after connect to avoid startup failures
 // caused by legacy index option mismatches (for example sparse vs non-sparse).
@@ -158,7 +160,12 @@ mongoose
   .then(async () => {
     console.log("Connected to MongoDB.");
     await ensureUsernames();
-    await ensureUserIndexes();
+    if (SHOULD_SYNC_USER_INDEXES) {
+      await ensureUserIndexes();
+      console.log("User indexes synced.");
+    } else {
+      console.log("Skipping user index sync (set SYNC_USER_INDEXES=true to enable).");
+    }
     app.listen(PORT, () => {
       console.log(`Coffee Ratings running at http://localhost:${PORT}`);
     });
