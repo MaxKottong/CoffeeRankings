@@ -103,6 +103,11 @@ const placeSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    criticSlot: {
+      type: String,
+      enum: ["max", "margo", ""],
+      default: "",
+    },
     images: [imageSchema],
     communityReviews: [communityReviewSchema],
   },

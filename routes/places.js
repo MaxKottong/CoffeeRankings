@@ -7,8 +7,6 @@ const User = require("../models/User");
 const { requireAuth, requireAdmin } = require("../middleware/auth");
 
 const router = express.Router();
-const MAX_OWNER = "max.kottong@gmail.com";
-const MARGO_OWNER = "margaretmclean1@me.com";
 
 // Store uploaded images in memory so we can persist them in MongoDB.
 const upload = multer({
@@ -130,6 +128,7 @@ function toReviewView(place) {
     notes: place.notes || "",
     owner: place.owner || "",
     ownerName: place.ownerName || "",
+    criticSlot: place.criticSlot || "",
     createdAt: place.createdAt,
     images: (place.images || []).map((img) => ({ _id: img._id })),
     ...breakdown,
@@ -168,6 +167,16 @@ function criticsAverage(maxReview, margoReview) {
 
   if (!scores.length) return null;
   return scores.reduce((acc, score) => acc + score, 0) / scores.length;
+}
+
+function criticSlotForDoc(doc) {
+  const slot = String(doc.criticSlot || "").trim().toLowerCase();
+  if (slot === "max" || slot === "margo") return slot;
+
+  const ownerName = String(doc.ownerName || "").trim().toLowerCase();
+  if (ownerName === "max") return "max";
+  if (ownerName === "margo") return "margo";
+  return "";
 }
 
 function buildCriticSection(values, prefix) {
@@ -279,8 +288,10 @@ function consolidatePlaces(places) {
       const sortedDocs = group.docs.slice().sort((a, b) => {
         return new Date(a.createdAt) - new Date(b.createdAt);
       });
-      const maxReview = sortedDocs.find((doc) => doc.owner === MAX_OWNER) || null;
-      const margoReview = sortedDocs.find((doc) => doc.owner === MARGO_OWNER) || null;
+      const maxReview =
+        sortedDocs.find((doc) => criticSlotForDoc(doc) === "max") || null;
+      const margoReview =
+        sortedDocs.find((doc) => criticSlotForDoc(doc) === "margo") || null;
       const anchor = maxReview || margoReview || sortedDocs[0];
       const latestReview = sortedDocs[sortedDocs.length - 1] || null;
       const community = summarizeCommunityReviews(anchor.communityReviews || []);
@@ -443,6 +454,7 @@ async function upsertCriticDoc({
   existing,
   ownerEmail,
   ownerName,
+  criticSlot,
   common,
   section,
   images,
@@ -456,6 +468,7 @@ async function upsertCriticDoc({
   doc.location = common.location;
   doc.owner = ownerEmail;
   doc.ownerName = ownerName;
+  doc.criticSlot = criticSlot;
 
   if (section.provided) {
     doc.ordered = section.ordered;
@@ -468,18 +481,6 @@ async function upsertCriticDoc({
 
   (images || []).forEach((img) => doc.images.push(img));
   await doc.save();
-}
-
-async function adminOwnerNames() {
-  const [maxUser, margoUser] = await Promise.all([
-    User.findOne({ email: MAX_OWNER }).lean(),
-    User.findOne({ email: MARGO_OWNER }).lean(),
-  ]);
-
-  return {
-    max: (maxUser && maxUser.name) || "Max",
-    margo: (margoUser && margoUser.name) || "Margo",
-  };
 }
 
 // Home page — show only the most recently created review from the DB.
@@ -596,21 +597,25 @@ router.post(
 
     try {
       const images = filesToImages(req.files);
-      const ownerNames = await adminOwnerNames();
+      const adminEmail = String((req.session.user && req.session.user.email) || "")
+        .trim()
+        .toLowerCase();
 
       await Promise.all([
         upsertCriticDoc({
           existing: null,
-          ownerEmail: MAX_OWNER,
-          ownerName: ownerNames.max,
+          ownerEmail: adminEmail,
+          ownerName: "Max",
+          criticSlot: "max",
           common: parsed.normalized,
           section: parsed.normalized.max,
           images,
         }),
         upsertCriticDoc({
           existing: null,
-          ownerEmail: MARGO_OWNER,
-          ownerName: ownerNames.margo,
+          ownerEmail: adminEmail,
+          ownerName: "Margo",
+          criticSlot: "margo",
           common: parsed.normalized,
           section: parsed.normalized.margo,
           images,
@@ -656,25 +661,31 @@ router.put(
       const key = placeKey(base);
       const all = await Place.find();
       const groupDocs = all.filter((doc) => placeKey(doc) === key);
-      const maxDoc = groupDocs.find((doc) => doc.owner === MAX_OWNER) || null;
-      const margoDoc = groupDocs.find((doc) => doc.owner === MARGO_OWNER) || null;
+      const maxDoc =
+        groupDocs.find((doc) => criticSlotForDoc(doc) === "max") || null;
+      const margoDoc =
+        groupDocs.find((doc) => criticSlotForDoc(doc) === "margo") || null;
 
-      const ownerNames = await adminOwnerNames();
+      const adminEmail = String((req.session.user && req.session.user.email) || "")
+        .trim()
+        .toLowerCase();
       const images = filesToImages(req.files);
 
       await Promise.all([
         upsertCriticDoc({
           existing: maxDoc,
-          ownerEmail: MAX_OWNER,
-          ownerName: ownerNames.max,
+          ownerEmail: adminEmail,
+          ownerName: "Max",
+          criticSlot: "max",
           common: parsed.normalized,
           section: parsed.normalized.max,
           images,
         }),
         upsertCriticDoc({
           existing: margoDoc,
-          ownerEmail: MARGO_OWNER,
-          ownerName: ownerNames.margo,
+          ownerEmail: adminEmail,
+          ownerName: "Margo",
+          criticSlot: "margo",
           common: parsed.normalized,
           section: parsed.normalized.margo,
           images,
@@ -684,7 +695,7 @@ router.put(
       const refreshedBase = await Place.findOne({
         name: parsed.normalized.name,
         location: parsed.normalized.location,
-        owner: { $in: [MAX_OWNER, MARGO_OWNER] },
+        criticSlot: { $in: ["max", "margo"] },
       }).lean();
 
       if (refreshedBase) {
@@ -726,10 +737,12 @@ router.delete(
       if (!base) return res.redirect("/reviews");
 
       const key = placeKey(base);
-      const all = await Place.find().select("_id name location owner").lean();
+      const all = await Place.find()
+        .select("_id name location owner ownerName criticSlot")
+        .lean();
       const ids = all
         .filter((doc) => placeKey(doc) === key)
-        .filter((doc) => doc.owner === MAX_OWNER || doc.owner === MARGO_OWNER)
+        .filter((doc) => ["max", "margo"].includes(criticSlotForDoc(doc)))
         .map((doc) => doc._id);
 
       if (ids.length) {

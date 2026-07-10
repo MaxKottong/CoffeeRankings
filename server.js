@@ -5,7 +5,6 @@ const express = require("express");
 const mongoose = require("mongoose");
 const methodOverride = require("method-override");
 const session = require("express-session");
-const bcrypt = require("bcryptjs");
 
 const placesRouter = require("./routes/places");
 const authRouter = require("./routes/auth");
@@ -22,25 +21,6 @@ const SESSION_SECRET =
 // Run index migrations manually after connect to avoid startup failures
 // caused by legacy index option mismatches (for example sparse vs non-sparse).
 mongoose.set("autoIndex", false);
-
-const ADMIN_SEED_USERS = [
-  {
-    username: "max",
-    email: "max.kottong@gmail.com",
-    name: "Max",
-    location: "Tampa, FL",
-    password:
-      process.env.MAX_ADMIN_PASSWORD || process.env.MAX_PASSWORD || "C@t@c1y5m1c",
-  },
-  {
-    username: "margo",
-    email: "margaretmclean1@me.com",
-    name: "Margo",
-    location: "Tampa, FL",
-    password:
-      process.env.MARGO_ADMIN_PASSWORD || process.env.MARGO_PASSWORD || "B!ackd0g123",
-  },
-];
 
 function slugifyUsername(value) {
   return String(value || "")
@@ -75,35 +55,6 @@ async function ensureUsernames() {
       user.location = "";
     }
     await user.save();
-  }
-}
-
-async function ensureAdminUsers() {
-  for (const seed of ADMIN_SEED_USERS) {
-    const existing = await User.findOne({ email: seed.email });
-    if (existing) {
-      if (!existing.username) {
-        existing.username = seed.username;
-      }
-      if (!existing.location) {
-        existing.location = seed.location;
-      }
-      if (!existing.isAdmin) {
-        existing.isAdmin = true;
-      }
-      await existing.save();
-      continue;
-    }
-
-    const passwordHash = await bcrypt.hash(seed.password, 12);
-    await User.create({
-      username: seed.username,
-      name: seed.name,
-      email: seed.email,
-      location: seed.location,
-      passwordHash,
-      isAdmin: true,
-    });
   }
 }
 
@@ -207,7 +158,6 @@ mongoose
   .then(async () => {
     console.log("Connected to MongoDB.");
     await ensureUsernames();
-    await ensureAdminUsers();
     await ensureUserIndexes();
     app.listen(PORT, () => {
       console.log(`Coffee Ratings running at http://localhost:${PORT}`);
