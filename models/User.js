@@ -39,7 +39,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       maxlength: [300, "Bio must be 300 characters or fewer."],
-      default: "about me: i love coffee!",
+      default: "I love coffee!",
     },
     topCoffees: {
       type: [String],

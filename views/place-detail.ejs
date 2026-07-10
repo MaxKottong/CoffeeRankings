@@ -161,12 +161,14 @@
             <% place.communityReviews.forEach(function (review) { %>
               <article class="community-item">
                 <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
-                  <strong><%= review.author || "Anonymous" %></strong>
+                  <div>
+                    <strong><%= review.author || "Anonymous" %></strong>
+                    <% if (review.accountUsername) { %>
+                      <a href="/users/<%= review.accountUsername %>" class="community-profile-link">@<%= review.accountUsername %></a>
+                    <% } %>
+                  </div>
                   <span class="rating-pill"><%= review.overallRating.toFixed(1) %><small>/10</small></span>
                 </div>
-                <% if (review.accountEmail) { %>
-                  <p class="small text-body-secondary mb-1"><%= review.accountEmail %></p>
-                <% } %>
                 <% if (review.ordered) { %>
                   <p class="small mb-1"><strong>Ordered:</strong> <%= review.ordered %></p>
                 <% } %>

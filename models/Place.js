@@ -17,6 +17,18 @@ const imageSchema = new mongoose.Schema(
 
 const communityReviewSchema = new mongoose.Schema(
   {
+    accountUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    accountUsername: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: [40, "Account username must be 40 characters or fewer."],
+      default: "",
+    },
     accountEmail: {
       type: String,
       trim: true,

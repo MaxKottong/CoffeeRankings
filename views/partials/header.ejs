@@ -35,6 +35,16 @@
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navContent">
+          <form class="d-flex ms-lg-3 me-lg-2 nav-search-form" role="search" action="/reviews" method="GET">
+            <input
+              class="form-control form-control-sm"
+              type="search"
+              name="q"
+              placeholder="Search places"
+              aria-label="Search places"
+            />
+            <button class="btn btn-sm btn-outline-secondary" type="submit">Search</button>
+          </form>
           <ul class="navbar-nav ms-auto align-items-lg-center">
             <li class="nav-item">
               <a class="nav-link" href="/">Home</a>

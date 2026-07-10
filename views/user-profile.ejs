@@ -1,0 +1,85 @@
+<%- include("partials/header") %>
+
+<section class="container py-5 profile-page">
+  <article class="profile-shell">
+    <div class="profile-header-card">
+      <div class="profile-avatar-wrap">
+        <% if (profileUser.profileImage && profileUser.profileImage.data) { %>
+          <img class="profile-avatar" src="/users/<%= profileUser._id %>/profile-image" alt="Profile image" />
+        <% } else { %>
+          <div class="profile-avatar profile-avatar-fallback">PFP</div>
+        <% } %>
+      </div>
+
+      <div class="profile-headline">
+        <h1>@<%= profileUser.username %></h1>
+        <p><%= profileUser.bio || "I love coffee!" %></p>
+      </div>
+    </div>
+
+    <div class="profile-meta-row">
+      <div class="profile-meta-item">
+        <p class="meta-label">Location</p>
+        <p class="meta-value"><%= profileUser.location || "Unknown" %></p>
+      </div>
+      <div class="profile-meta-item">
+        <p class="meta-label">Joined</p>
+        <p class="meta-value"><%= new Date(profileUser.createdAt).toLocaleString("en-US", { month: "long", year: "numeric" }) %></p>
+      </div>
+      <div class="profile-meta-item">
+        <p class="meta-label">Coffee Lover</p>
+        <p class="meta-value">Always searching for the next great cup.</p>
+      </div>
+    </div>
+
+    <div class="row g-3 mt-3">
+      <div class="col-12 col-lg-4">
+        <div class="profile-column-card">
+          <h2>Top 3 Coffees</h2>
+          <% if ((profileUser.topCoffees || []).length) { %>
+            <ol class="mb-0">
+              <% (profileUser.topCoffees || []).slice(0, 3).forEach(function (coffee) { %>
+                <li><%= coffee %></li>
+              <% }); %>
+            </ol>
+          <% } else { %>
+            <p class="text-body-secondary mb-0">No favorites shared yet.</p>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-4">
+        <div class="profile-column-card">
+          <h2>Recent Reviews</h2>
+          <% if (!recentReviews.length) { %>
+            <p class="text-body-secondary">No recent community reviews yet.</p>
+          <% } else { %>
+            <% recentReviews.forEach(function (review) { %>
+              <article class="recent-review-item">
+                <p class="recent-review-title"><%= review.placeName %> <span><%= review.overallRating.toFixed(1) %></span></p>
+                <p class="recent-review-date"><%= new Date(review.createdAt).toLocaleDateString() %></p>
+              </article>
+            <% }); %>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-4">
+        <div class="profile-column-card">
+          <h2>Want to Try</h2>
+          <% if ((profileUser.wantToTry || []).length) { %>
+            <ul class="mb-0">
+              <% (profileUser.wantToTry || []).slice(0, 3).forEach(function (coffee) { %>
+                <li><%= coffee %></li>
+              <% }); %>
+            </ul>
+          <% } else { %>
+            <p class="text-body-secondary mb-0">No wishlist items yet.</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </article>
+</section>
+
+<%- include("partials/footer") %>

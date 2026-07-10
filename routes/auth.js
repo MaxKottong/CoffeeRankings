@@ -29,6 +29,12 @@ function makeSyntheticEmail(username) {
   return `${username}@users.local`;
 }
 
+function normalizeBio(value) {
+  return String(value || "")
+    .replace(/^\s*about\s*me\s*:\s*/i, "")
+    .trim();
+}
+
 function toSessionUser(user) {
   return {
     id: String(user._id),
@@ -50,9 +56,28 @@ function ratingFromCommunityReview(review) {
   );
 }
 
+function reviewBelongsToUser(review, user) {
+  const reviewUserId = String(review.accountUserId || "");
+  const userId = String(user._id || user.id || "");
+  const reviewUsername = String(review.accountUsername || "").toLowerCase();
+  const username = String(user.username || "").toLowerCase();
+  const reviewEmail = String(review.accountEmail || "").toLowerCase();
+  const email = String(user.email || "").toLowerCase();
+
+  return (
+    (reviewUserId && userId && reviewUserId === userId) ||
+    (reviewUsername && username && reviewUsername === username) ||
+    (reviewEmail && email && reviewEmail === email)
+  );
+}
+
 async function getRecentCommunityReviewsForUser(user) {
   const places = await Place.find({
-    "communityReviews.accountEmail": user.email,
+    $or: [
+      { "communityReviews.accountUserId": user._id || user.id },
+      { "communityReviews.accountUsername": user.username },
+      { "communityReviews.accountEmail": user.email },
+    ],
   })
     .select("name communityReviews")
     .lean();
@@ -60,7 +85,7 @@ async function getRecentCommunityReviewsForUser(user) {
   const recent = [];
   places.forEach((place) => {
     (place.communityReviews || []).forEach((review) => {
-      if (String(review.accountEmail || "").toLowerCase() !== String(user.email || "").toLowerCase()) {
+      if (!reviewBelongsToUser(review, user)) {
         return;
       }
       recent.push({
@@ -202,14 +227,19 @@ router.get("/profile", requireAuth, async (req, res, next) => {
     }
 
     const recentReviews = await getRecentCommunityReviewsForUser(user);
+    const safeBio = normalizeBio(user.bio) || "I love coffee!";
     res.render("profile", {
       title: "Profile",
-      profileUser: user,
+      canEdit: true,
+      profileUser: {
+        ...user,
+        bio: safeBio,
+      },
       recentReviews,
       error: null,
       values: {
         location: user.location || "",
-        bio: user.bio || "",
+        bio: safeBio,
         topCoffee1: user.topCoffees && user.topCoffees[0] ? user.topCoffees[0] : "",
         topCoffee2: user.topCoffees && user.topCoffees[1] ? user.topCoffees[1] : "",
         topCoffee3: user.topCoffees && user.topCoffees[2] ? user.topCoffees[2] : "",
@@ -243,7 +273,7 @@ router.put("/profile", requireAuth, async (req, res, next) => {
   uploadProfileImage(req, res, async (uploadErr) => {
     const values = {
       location: String(req.body.location || "").trim(),
-      bio: String(req.body.bio || "").trim(),
+      bio: normalizeBio(req.body.bio),
       topCoffee1: String(req.body.topCoffee1 || "").trim(),
       topCoffee2: String(req.body.topCoffee2 || "").trim(),
       topCoffee3: String(req.body.topCoffee3 || "").trim(),
@@ -269,9 +299,13 @@ router.put("/profile", requireAuth, async (req, res, next) => {
 
       if (errors.length) {
         const recentReviews = await getRecentCommunityReviewsForUser(user);
+        const currentUser = user.toObject();
         return res.status(400).render("profile", {
           title: "Profile",
-          profileUser: user.toObject(),
+          profileUser: {
+            ...currentUser,
+            bio: normalizeBio(currentUser.bio) || "I love coffee!",
+          },
           recentReviews,
           error: errors.join(" "),
           values,
@@ -279,7 +313,7 @@ router.put("/profile", requireAuth, async (req, res, next) => {
       }
 
       user.location = values.location;
-      user.bio = values.bio || "about me: i love coffee!";
+      user.bio = values.bio || "I love coffee!";
       user.topCoffees = [values.topCoffee1, values.topCoffee2, values.topCoffee3]
         .filter((item) => !!item)
         .slice(0, 3);
@@ -306,6 +340,33 @@ router.put("/profile", requireAuth, async (req, res, next) => {
       next(err);
     }
   });
+});
+
+// Public profile page by username.
+router.get("/users/:username", async (req, res, next) => {
+  try {
+    const username = normalizeUsername(req.params.username);
+    const user = await User.findOne({ username }).lean();
+    if (!user) {
+      return res.status(404).render("error", {
+        title: "Not Found",
+        message: "This profile could not be found.",
+      });
+    }
+
+    const recentReviews = await getRecentCommunityReviewsForUser(user);
+    const safeBio = normalizeBio(user.bio) || "I love coffee!";
+    res.render("user-profile", {
+      title: `@${user.username}`,
+      profileUser: {
+        ...user,
+        bio: safeBio,
+      },
+      recentReviews,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // Handle logout.

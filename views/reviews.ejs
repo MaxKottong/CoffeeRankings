@@ -8,9 +8,16 @@
     </span>
   </div>
 
+  <% if (searchTerm) { %>
+    <p class="text-body-secondary mb-4">
+      Showing results for <strong>"<%= searchTerm %>"</strong>
+      <a href="/reviews" class="ms-2">Clear</a>
+    </p>
+  <% } %>
+
   <% if (totalPlaces === 0) { %>
     <div class="text-center text-body-secondary py-5">
-      <p class="fs-5 mb-3">No coffee places yet.</p>
+      <p class="fs-5 mb-3"><%= searchTerm ? "No matching places found." : "No coffee places yet." %></p>
       <% if (typeof user !== "undefined" && user && user.isAdmin) { %>
         <a href="/submit" class="btn btn-primary">Be the first to add one</a>
       <% } %>

@@ -345,6 +345,41 @@ async function renderPlacePage(
     });
   }
 
+  const emailsNeedingLookup = (place.communityReviews || [])
+    .filter(
+      (review) =>
+        !String(review.accountUsername || "").trim() &&
+        String(review.accountEmail || "").trim()
+    )
+    .map((review) => String(review.accountEmail || "").trim().toLowerCase());
+
+  if (emailsNeedingLookup.length) {
+    const users = await User.find({
+      email: { $in: Array.from(new Set(emailsNeedingLookup)) },
+    })
+      .select("email username")
+      .lean();
+
+    const usernameByEmail = new Map(
+      users.map((user) => [
+        String(user.email || "").toLowerCase(),
+        String(user.username || "").toLowerCase(),
+      ])
+    );
+
+    place.communityReviews = (place.communityReviews || []).map((review) => {
+      if (String(review.accountUsername || "").trim()) {
+        return review;
+      }
+      const email = String(review.accountEmail || "").trim().toLowerCase();
+      const accountUsername = usernameByEmail.get(email) || "";
+      return {
+        ...review,
+        accountUsername,
+      };
+    });
+  }
+
   const fallbackCriticValues = {
     name: place.name,
     location: place.location || "",
@@ -471,11 +506,21 @@ router.get("/", async (req, res, next) => {
 // Reviews page — consolidated Max + Margo cards.
 router.get("/reviews", async (req, res, next) => {
   try {
+    const searchTerm = String(req.query.q || "").trim();
     const grouped = consolidatePlaces(await Place.find().lean());
+    const places = searchTerm
+      ? grouped.filter((place) =>
+          String(place.name || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
+        )
+      : grouped;
+
     res.render("reviews", {
       title: "Reviews",
-      places: grouped,
-      totalPlaces: grouped.length,
+      places,
+      totalPlaces: places.length,
+      searchTerm,
     });
   } catch (err) {
     next(err);
@@ -742,6 +787,10 @@ router.post(
       await Place.findByIdAndUpdate(req.params.id, {
         $push: {
           communityReviews: {
+            accountUserId: req.session.user.id,
+            accountUsername: String(req.session.user.username || "")
+              .trim()
+              .toLowerCase(),
             accountEmail: String(req.session.user.email || "").trim().toLowerCase(),
             author: values.author.trim() || "Anonymous",
             ordered: values.ordered.trim(),
