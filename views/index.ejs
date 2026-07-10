@@ -26,7 +26,7 @@
 
 <div class="container pb-5">
   <% if (latestPlace) { %>
-    <article class="featured-card">
+    <article class="featured-card latest-review-card-wrap">
       <aside class="featured-meta">
         <div class="meta-block">
           <p class="meta-label">Origin</p>
@@ -75,7 +75,7 @@
       </div>
     </article>
   <% } else { %>
-    <article class="featured-card">
+    <article class="featured-card latest-review-card-wrap">
       <div class="featured-body">
         <h2>No reviews yet</h2>
         <p class="featured-notes">Once Max or Margo posts a review, it will appear here automatically.</p>
@@ -84,33 +84,5 @@
     </article>
   <% } %>
 </div>
-
-<section id="about" class="about-band py-5">
-  <div class="container">
-    <div class="row g-4 text-center text-lg-start">
-      <div class="col-12 col-lg-4">
-        <div class="about-item">
-          <div class="about-icon">01</div>
-          <h3>Find</h3>
-          <p>Discover top-rated coffee spots near you and around the world.</p>
-        </div>
-      </div>
-      <div class="col-12 col-lg-4">
-        <div class="about-item">
-          <div class="about-icon">02</div>
-          <h3>Review</h3>
-          <p>Share your experience and help others find their perfect cup.</p>
-        </div>
-      </div>
-      <div class="col-12 col-lg-4">
-        <div class="about-item">
-          <div class="about-icon">03</div>
-          <h3>Enjoy</h3>
-          <p>Life is too short for bad coffee. Sip happy and stay caffeinated.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <%- include("partials/footer") %>

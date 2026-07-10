@@ -314,6 +314,18 @@ router.get("/reviews", async (req, res, next) => {
   }
 });
 
+router.get("/about", (req, res) => {
+  res.render("about", {
+    title: "About Us",
+  });
+});
+
+router.get("/contact", (req, res) => {
+  res.render("contact", {
+    title: "Contact",
+  });
+});
+
 // Full place page
 router.get("/places/:id", async (req, res, next) => {
   try {
