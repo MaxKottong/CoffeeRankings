@@ -121,7 +121,42 @@ async function ensureUserIndexes() {
     await User.collection.dropIndex(idx.name);
   }
 
-  await User.syncIndexes();
+  try {
+    await User.syncIndexes();
+  } catch (err) {
+    const message = String((err && err.message) || "");
+    const isIndexConflict =
+      err &&
+      (err.codeName === "IndexOptionsConflict" ||
+        err.code === 85 ||
+        message.includes("An existing index has the same name as the requested index"));
+
+    if (!isIndexConflict) {
+      throw err;
+    }
+
+    // Some deployments can have the opposite sparse/non-sparse variant with the
+    // same auto-generated name. Drop and recreate whichever one conflicts.
+    const dropTargets = [];
+    if (message.includes('"username_1"')) dropTargets.push("username_1");
+    if (message.includes('"email_1"')) dropTargets.push("email_1");
+    if (!dropTargets.length) {
+      dropTargets.push("username_1", "email_1");
+    }
+
+    for (const name of dropTargets) {
+      try {
+        await User.collection.dropIndex(name);
+      } catch (dropErr) {
+        const dropMessage = String((dropErr && dropErr.message) || "");
+        if (!dropMessage.includes("index not found")) {
+          throw dropErr;
+        }
+      }
+    }
+
+    await User.syncIndexes();
+  }
 }
 
 // View engine
