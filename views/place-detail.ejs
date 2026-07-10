@@ -164,6 +164,9 @@
                   <strong><%= review.author || "Anonymous" %></strong>
                   <span class="rating-pill"><%= review.overallRating.toFixed(1) %><small>/10</small></span>
                 </div>
+                <% if (review.accountEmail) { %>
+                  <p class="small text-body-secondary mb-1"><%= review.accountEmail %></p>
+                <% } %>
                 <% if (review.ordered) { %>
                   <p class="small mb-1"><strong>Ordered:</strong> <%= review.ordered %></p>
                 <% } %>
@@ -242,59 +245,6 @@
         <% } %>
       </div>
     </div>
-  </div>
-</section>
-
-<section id="comments" class="container pb-5">
-  <div class="card coffee-card p-4">
-    <h2 class="h4 mb-3">Comments</h2>
-
-    <% if (place.comments.length) { %>
-      <ul class="list-unstyled comment-list mb-3">
-        <% place.comments.forEach(function (comment) { %>
-          <li class="comment-item">
-            <div class="d-flex justify-content-between align-items-start gap-2">
-              <div>
-                <span class="comment-author"><%= comment.author || "Anonymous" %></span>
-                <p class="comment-body mb-0"><%= comment.body %></p>
-              </div>
-              <% if (typeof user !== "undefined" && user && user.isAdmin) { %>
-                <form
-                  action="/places/<%= place.anchorId %>/comments/<%= comment._id %>?_method=DELETE"
-                  method="POST"
-                  onsubmit="return confirm('Delete this comment?');"
-                >
-                  <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Delete comment">Delete</button>
-                </form>
-              <% } %>
-            </div>
-          </li>
-        <% }); %>
-      </ul>
-    <% } else { %>
-      <p class="text-body-secondary">No comments yet. Be the first.</p>
-    <% } %>
-
-    <form action="/places/<%= place.anchorId %>/comments" method="POST" class="comment-form">
-      <input
-        type="text"
-        class="form-control form-control-sm mb-2"
-        name="author"
-        maxlength="60"
-        placeholder="Your name (optional)"
-      />
-      <div class="input-group input-group-sm">
-        <input
-          type="text"
-          class="form-control"
-          name="body"
-          maxlength="500"
-          placeholder="Add a comment"
-          required
-        />
-        <button type="submit" class="btn btn-outline-secondary">Post</button>
-      </div>
-    </form>
   </div>
 </section>
 

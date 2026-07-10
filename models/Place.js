@@ -15,26 +15,15 @@ const imageSchema = new mongoose.Schema(
   { _id: true }
 );
 
-const commentSchema = new mongoose.Schema(
-  {
-    author: {
-      type: String,
-      trim: true,
-      maxlength: [60, "Name must be 60 characters or fewer."],
-      default: "Anonymous",
-    },
-    body: {
-      type: String,
-      required: [true, "A comment cannot be empty."],
-      trim: true,
-      maxlength: [500, "Comment must be 500 characters or fewer."],
-    },
-  },
-  { timestamps: true }
-);
-
 const communityReviewSchema = new mongoose.Schema(
   {
+    accountEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: [160, "Account email must be 160 characters or fewer."],
+      default: "",
+    },
     author: {
       type: String,
       trim: true,
@@ -103,7 +92,6 @@ const placeSchema = new mongoose.Schema(
       default: "",
     },
     images: [imageSchema],
-    comments: [commentSchema],
     communityReviews: [communityReviewSchema],
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }

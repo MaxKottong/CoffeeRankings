@@ -467,40 +467,6 @@ h4,
   background-color: #fbf7f0;
 }
 
-.comments-section {
-  border-top: 1px solid rgba(111, 85, 70, 0.15);
-  padding-top: 0.78rem;
-}
-
-.comments-title {
-  font-size: 0.82rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-bottom: 0.48rem;
-}
-
-.comment-list {
-  max-height: 180px;
-  overflow-y: auto;
-}
-
-.comment-item {
-  background-color: #f7efe3;
-  border-radius: 0.55rem;
-  padding: 0.45rem 0.55rem;
-  margin-bottom: 0.38rem;
-}
-
-.comment-author {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #5f4c40;
-}
-
-.comment-body {
-  font-size: 0.87rem;
-}
-
 .about-band {
   background: linear-gradient(180deg, #efe3d3, #e9dbc7);
   border-top: 1px solid rgba(111, 85, 70, 0.12);

@@ -8,7 +8,7 @@
     <p class="hero-kicker">Max &amp; Margo Coffee Reviews</p>
     <h1 class="hero-title">Honest reviews.<br />Better coffee.</h1>
     <p class="hero-copy">Your most recent coffee story, at a glance.</p>
-    <% if (typeof user !== "undefined" && user) { %>
+    <% if (typeof user !== "undefined" && user && user.isAdmin) { %>
       <a href="/submit" class="btn btn-primary btn-lg">Share a Review</a>
     <% } else { %>
       <a href="/reviews" class="btn btn-primary btn-lg">Browse Reviews</a>

@@ -40,44 +40,6 @@ const ratingValidator = (field, label) =>
     .isFloat({ min: 0, max: 10 })
     .withMessage(`${label} rating must be a number between 0 and 10.`);
 
-const placeValidators = [
-  body("name")
-    .trim()
-    .notEmpty()
-    .withMessage("Please enter the name of the place.")
-    .isLength({ max: 120 })
-    .withMessage("Name must be 120 characters or fewer."),
-  body("location")
-    .trim()
-    .isLength({ max: 160 })
-    .withMessage("Location must be 160 characters or fewer."),
-  body("ordered")
-    .trim()
-    .isLength({ max: 200 })
-    .withMessage("What was ordered must be 200 characters or fewer."),
-  ratingValidator("costRating", "Cost"),
-  ratingValidator("tasteRating", "Taste"),
-  ratingValidator("locationRating", "Location"),
-  ratingValidator("vibeRating", "Vibe"),
-  body("notes")
-    .trim()
-    .isLength({ max: 500 })
-    .withMessage("Notes must be 500 characters or fewer."),
-];
-
-function emptySingleSubmitValues() {
-  return {
-    name: "",
-    location: "",
-    ordered: "",
-    costRating: "",
-    tasteRating: "",
-    locationRating: "",
-    vibeRating: "",
-    notes: "",
-  };
-}
-
 function emptyAdminSubmitValues() {
   return {
     name: "",
@@ -94,19 +56,6 @@ function emptyAdminSubmitValues() {
     margoLocationRating: "",
     margoVibeRating: "",
     margoNotes: "",
-  };
-}
-
-function readSingleValues(body) {
-  return {
-    name: body.name || "",
-    location: body.location || "",
-    ordered: body.ordered || "",
-    costRating: body.costRating || "",
-    tasteRating: body.tasteRating || "",
-    locationRating: body.locationRating || "",
-    vibeRating: body.vibeRating || "",
-    notes: body.notes || "",
   };
 }
 
@@ -321,7 +270,6 @@ function consolidatePlaces(places) {
 
     groups.get(key).docs.push({
       ...place,
-      comments: placeDoc.comments || [],
       communityReviews: placeDoc.communityReviews || [],
     });
   });
@@ -350,7 +298,6 @@ function consolidatePlaces(places) {
         communityRating: community.average,
         communityReviewCount: community.count,
         communityReviews: community.list,
-        comments: anchor.comments || [],
         latestReview,
         compositeScore:
           typeof criticAverage === "number"
@@ -572,14 +519,12 @@ router.get("/places/:id/image/:imageId", async (req, res, next) => {
 });
 
 // Submission form.
-router.get("/submit", requireAuth, (req, res) => {
-  const isAdmin = !!(req.session && req.session.user && req.session.user.isAdmin);
-
+router.get("/submit", requireAuth, requireAdmin, (req, res) => {
   res.render("submit", {
     title: "Submit a Coffee Place",
     errors: [],
-    values: isAdmin ? emptyAdminSubmitValues() : emptySingleSubmitValues(),
-    isAdmin,
+    values: emptyAdminSubmitValues(),
+    isAdmin: true,
   });
 });
 
@@ -587,45 +532,9 @@ router.get("/submit", requireAuth, (req, res) => {
 router.post(
   "/submit",
   requireAuth,
+  requireAdmin,
   uploadImages,
-  placeValidators,
   async (req, res, next) => {
-    const isAdmin = !!(req.session && req.session.user && req.session.user.isAdmin);
-
-    if (!isAdmin) {
-      const errors = validationResult(req);
-      const values = readSingleValues(req.body);
-      const extraErrors = req.uploadError ? [{ msg: req.uploadError }] : [];
-
-      if (!errors.isEmpty() || extraErrors.length) {
-        return res.status(400).render("submit", {
-          title: "Submit a Coffee Place",
-          errors: [...errors.array(), ...extraErrors],
-          values,
-          isAdmin,
-        });
-      }
-
-      try {
-        await Place.create({
-          name: values.name,
-          location: values.location,
-          ordered: values.ordered,
-          costRating: Number(values.costRating),
-          tasteRating: Number(values.tasteRating),
-          locationRating: Number(values.locationRating),
-          vibeRating: Number(values.vibeRating),
-          notes: values.notes,
-          owner: req.session.user.email,
-          ownerName: req.session.user.name,
-          images: filesToImages(req.files),
-        });
-        return res.redirect("/reviews");
-      } catch (err) {
-        return next(err);
-      }
-    }
-
     const values = readAdminValues(req.body);
     const parsed = validateAdminCriticValues(values);
     const errors = parsed.errors.slice();
@@ -636,7 +545,7 @@ router.post(
         title: "Submit a Coffee Place",
         errors,
         values,
-        isAdmin,
+        isAdmin: true,
       });
     }
 
@@ -789,56 +698,6 @@ router.delete(
   }
 );
 
-// Add a public comment (anyone can post).
-router.post(
-  "/places/:id/comments",
-  body("body")
-    .trim()
-    .notEmpty()
-    .withMessage("A comment cannot be empty.")
-    .isLength({ max: 500 })
-    .withMessage("Comment must be 500 characters or fewer."),
-  body("author")
-    .trim()
-    .isLength({ max: 60 })
-    .withMessage("Name must be 60 characters or fewer."),
-  async (req, res, next) => {
-    const errors = validationResult(req);
-    try {
-      if (errors.isEmpty()) {
-        await Place.findByIdAndUpdate(req.params.id, {
-          $push: {
-            comments: {
-              author: (req.body.author || "").trim() || "Anonymous",
-              body: req.body.body.trim(),
-            },
-          },
-        });
-      }
-      res.redirect(`/places/${req.params.id}#comments`);
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
-// Delete a comment (admins only).
-router.delete(
-  "/places/:id/comments/:commentId",
-  requireAuth,
-  requireAdmin,
-  async (req, res, next) => {
-    try {
-      await Place.findByIdAndUpdate(req.params.id, {
-        $pull: { comments: { _id: req.params.commentId } },
-      });
-      res.redirect(`/places/${req.params.id}#comments`);
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
 // Add a community review with ratings that feed the community score.
 router.post(
   "/places/:id/community-reviews",
@@ -883,6 +742,7 @@ router.post(
       await Place.findByIdAndUpdate(req.params.id, {
         $push: {
           communityReviews: {
+            accountEmail: String(req.session.user.email || "").trim().toLowerCase(),
             author: values.author.trim() || "Anonymous",
             ordered: values.ordered.trim(),
             costRating: Number(values.costRating),
