@@ -10,10 +10,26 @@
   --card: #fffdf8;
 }
 
+:root[data-theme="dark"] {
+  --cream-1: #1f1b18;
+  --cream-2: #161310;
+  --sand: #463b34;
+  --taupe: #b39d89;
+  --mocha: #c8ad95;
+  --espresso: #f1e3d4;
+  --olive: #8ea082;
+  --line: #4b4038;
+  --card: #231f1b;
+}
+
 body.coffee-body {
   font-family: "Montserrat", "Segoe UI", system-ui, sans-serif;
   background: radial-gradient(circle at 8% 10%, #fdf9f2 0%, var(--cream-1) 45%, var(--cream-2) 100%);
   color: var(--espresso);
+}
+
+:root[data-theme="dark"] body.coffee-body {
+  background: radial-gradient(circle at 8% 10%, #2d2721 0%, var(--cream-1) 45%, var(--cream-2) 100%);
 }
 
 h1,
@@ -31,6 +47,11 @@ h4,
   position: sticky;
   top: 0;
   z-index: 1020;
+}
+
+:root[data-theme="dark"] .coffee-navbar {
+  background-color: rgba(26, 22, 18, 0.92);
+  border-bottom-color: rgba(241, 227, 212, 0.14);
 }
 
 .navbar-brand {
@@ -115,6 +136,11 @@ h4,
   border-radius: 0.85rem;
   border: 1px solid rgba(111, 85, 70, 0.14);
   background-color: #fffaf1;
+}
+
+:root[data-theme="dark"] .dropdown-menu {
+  border-color: rgba(241, 227, 212, 0.2);
+  background-color: #2a241f;
 }
 
 .landing-hero {
@@ -337,6 +363,53 @@ h4,
   border: 1px solid rgba(111, 85, 70, 0.14);
   background-color: #fffdf9;
   transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+:root[data-theme="dark"] .coffee-card,
+:root[data-theme="dark"] .detail-shell,
+:root[data-theme="dark"] .community-item,
+:root[data-theme="dark"] .review-column,
+:root[data-theme="dark"] .profile-shell,
+:root[data-theme="dark"] .profile-header-card,
+:root[data-theme="dark"] .profile-meta-row,
+:root[data-theme="dark"] .profile-column-card,
+:root[data-theme="dark"] .profile-edit-lower,
+:root[data-theme="dark"] .review-block,
+:root[data-theme="dark"] .submit-form-card,
+:root[data-theme="dark"] .community-summary.big,
+:root[data-theme="dark"] .category-rating,
+:root[data-theme="dark"] .contact-list li,
+:root[data-theme="dark"] .info-page-card {
+  background-color: var(--card);
+  border-color: rgba(241, 227, 212, 0.16);
+}
+
+:root[data-theme="dark"] .text-body-secondary,
+:root[data-theme="dark"] .hero-copy,
+:root[data-theme="dark"] .featured-location,
+:root[data-theme="dark"] .profile-headline p,
+:root[data-theme="dark"] .recent-review-date,
+:root[data-theme="dark"] .about-item p,
+:root[data-theme="dark"] .info-page-card .lede {
+  color: rgba(241, 227, 212, 0.78) !important;
+}
+
+:root[data-theme="dark"] .form-control {
+  background-color: #2d2722;
+  color: #f1e3d4;
+  border-color: #5a4e44;
+}
+
+:root[data-theme="dark"] .form-control::placeholder {
+  color: rgba(241, 227, 212, 0.55);
+}
+
+:root[data-theme="dark"] .btn-outline-secondary {
+  --bs-btn-color: #d9c4ae;
+  --bs-btn-border-color: #8f7865;
+  --bs-btn-hover-bg: #3a312a;
+  --bs-btn-hover-border-color: #aa9079;
+  --bs-btn-hover-color: #f4e8da;
 }
 
 .coffee-card-link {
@@ -743,8 +816,52 @@ h4,
   border-color: #5b402e;
 }
 
+.bean-btn.half .bean-dot {
+  background: linear-gradient(90deg, #6d4d37 0%, #6d4d37 50%, #d8c8b3 50%, #d8c8b3 100%);
+  border-color: #5b402e;
+}
+
+:root[data-theme="dark"] .bean-btn.half .bean-dot {
+  background: linear-gradient(90deg, #c6a58a 0%, #c6a58a 50%, #4e4239 50%, #4e4239 100%);
+  border-color: #b79476;
+}
+
 .bean-btn.active .bean-dot::after {
   background: rgba(244, 231, 216, 0.55);
+}
+
+:root[data-theme="dark"] .bean-dot {
+  background: #4e4239;
+  border-color: rgba(241, 227, 212, 0.25);
+}
+
+:root[data-theme="dark"] .bean-dot::after {
+  background: rgba(241, 227, 212, 0.35);
+}
+
+:root[data-theme="dark"] .bean-btn.active .bean-dot {
+  background: #c6a58a;
+  border-color: #b79476;
+}
+
+:root[data-theme="dark"] .bean-btn.active .bean-dot::after {
+  background: rgba(46, 35, 28, 0.45);
+}
+
+.shared-notes {
+  border: 1px solid rgba(111, 85, 70, 0.18);
+  border-radius: 0.75rem;
+  padding: 0.8rem;
+  background-color: #fcf7ef;
+}
+
+:root[data-theme="dark"] .shared-notes {
+  border-color: rgba(241, 227, 212, 0.18);
+  background-color: #2b2520;
+}
+
+.profile-theme-switch .form-check-input {
+  cursor: pointer;
 }
 
 .bean-btn:hover .bean-dot,

@@ -75,9 +75,6 @@
                   </span>
                 </li>
               </ul>
-              <% if (place.maxReview.notes) { %>
-                <p class="card-text"><%= place.maxReview.notes %></p>
-              <% } %>
             <% } else { %>
               <p class="text-body-secondary small">No review yet.</p>
             <% } %>
@@ -124,14 +121,19 @@
                   </span>
                 </li>
               </ul>
-              <% if (place.margoReview.notes) { %>
-                <p class="card-text"><%= place.margoReview.notes %></p>
-              <% } %>
             <% } else { %>
               <p class="text-body-secondary small">No review yet.</p>
             <% } %>
           </section>
         </div>
+
+        <% const criticSharedNotes = (place.maxReview && place.maxReview.notes) || (place.margoReview && place.margoReview.notes) || ""; %>
+        <% if (criticSharedNotes) { %>
+          <div class="shared-notes mb-3">
+            <p class="meta-label mb-1">Max + Margo Notes</p>
+            <p class="mb-0"><%= criticSharedNotes %></p>
+          </div>
+        <% } %>
 
         <div class="community-summary big">
           <p class="meta-label mb-1">Community Rating</p>
@@ -232,7 +234,6 @@
                     </div>
                   </div>
                 </div>
-                <div class="col-12"><textarea class="form-control" name="maxNotes" rows="2" maxlength="500" placeholder="Max notes"><%= criticValues.maxNotes %></textarea></div>
               </div>
 
               <div class="row g-2 mb-3">
@@ -301,7 +302,12 @@
                     </div>
                   </div>
                 </div>
-                <div class="col-12"><textarea class="form-control" name="margoNotes" rows="2" maxlength="500" placeholder="Margo notes"><%= criticValues.margoNotes %></textarea></div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Max + Margo Notes</label>
+                <textarea class="form-control" name="sharedNotes" rows="3" maxlength="1000" placeholder="Shared notes for both critics"><%= criticValues.sharedNotes %></textarea>
+                <div class="form-text">Click a selected bean again for a half-bean rating.</div>
               </div>
 
               <div class="mb-3">
@@ -377,24 +383,24 @@
                     <div class="row g-2 mb-2">
                       <div class="col-6">
                         <label class="form-label">Cost *</label>
-                        <input type="number" class="form-control form-control-sm" name="costRating" min="0" max="10" step="0.1" value="<%= review.costRating %>" required />
+                        <input type="number" class="form-control form-control-sm" name="costRating" min="0" max="10" step="0.5" value="<%= review.costRating %>" required />
                       </div>
                       <div class="col-6">
                         <label class="form-label">Taste *</label>
-                        <input type="number" class="form-control form-control-sm" name="tasteRating" min="0" max="10" step="0.1" value="<%= review.tasteRating %>" required />
+                        <input type="number" class="form-control form-control-sm" name="tasteRating" min="0" max="10" step="0.5" value="<%= review.tasteRating %>" required />
                       </div>
                       <div class="col-6">
                         <label class="form-label">Location *</label>
-                        <input type="number" class="form-control form-control-sm" name="locationRating" min="0" max="10" step="0.1" value="<%= review.locationRating %>" required />
+                        <input type="number" class="form-control form-control-sm" name="locationRating" min="0" max="10" step="0.5" value="<%= review.locationRating %>" required />
                       </div>
                       <div class="col-6">
                         <label class="form-label">Vibe *</label>
-                        <input type="number" class="form-control form-control-sm" name="vibeRating" min="0" max="10" step="0.1" value="<%= review.vibeRating %>" required />
+                        <input type="number" class="form-control form-control-sm" name="vibeRating" min="0" max="10" step="0.5" value="<%= review.vibeRating %>" required />
                       </div>
                     </div>
                     <div class="mb-2">
                       <label class="form-label">Notes</label>
-                      <textarea class="form-control form-control-sm" name="notes" rows="2" maxlength="500"><%= review.notes || "" %></textarea>
+                      <textarea class="form-control form-control-sm" name="notes" rows="2" maxlength="1000"><%= review.notes || "" %></textarea>
                     </div>
                     <div class="d-flex gap-2">
                       <button type="submit" class="btn btn-sm btn-primary">Save</button>
@@ -496,7 +502,8 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Notes</label>
-              <textarea class="form-control" name="notes" rows="3" maxlength="500"><%= communityValues.notes %></textarea>
+              <textarea class="form-control" name="notes" rows="3" maxlength="1000"><%= communityValues.notes %></textarea>
+              <div class="form-text">Click a selected bean again for a half-bean rating.</div>
             </div>
             <button type="submit" class="btn btn-primary">Submit Community Review</button>
           </form>
@@ -528,24 +535,37 @@
       var buttons = Array.prototype.slice.call(container.querySelectorAll('.bean-btn'));
       var valueEl = container.querySelector('.bean-rating-value');
       var initialRaw = parseFloat(container.getAttribute('data-initial') || hidden.value || '0');
-      var current = Number.isFinite(initialRaw) ? Math.max(0, Math.min(10, Math.round(initialRaw))) : 0;
+      var current = Number.isFinite(initialRaw)
+        ? Math.max(0, Math.min(10, Math.round(initialRaw * 2) / 2))
+        : 0;
+
+      function formatScore(value) {
+        return Number.isInteger(value) ? String(value) : value.toFixed(1);
+      }
 
       function render(next) {
-        current = Math.max(0, Math.min(10, Number(next) || 0));
+        current = Math.max(0, Math.min(10, Math.round((Number(next) || 0) * 2) / 2));
         hidden.value = current ? String(current) : '';
-        valueEl.textContent = (current || 0) + '/10';
+        valueEl.textContent = formatScore(current || 0) + '/10';
 
         buttons.forEach(function (btn) {
           var value = Number(btn.getAttribute('data-value') || '0');
           var active = value <= current;
+          var half = !active && value - 0.5 === current;
           btn.classList.toggle('active', active);
+          btn.classList.toggle('half', half);
           btn.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
       }
 
       buttons.forEach(function (btn) {
         btn.addEventListener('click', function () {
-          render(Number(btn.getAttribute('data-value') || '0'));
+          var nextValue = Number(btn.getAttribute('data-value') || '0');
+          if (current === nextValue) {
+            render(nextValue - 0.5);
+            return;
+          }
+          render(nextValue);
         });
       });
 

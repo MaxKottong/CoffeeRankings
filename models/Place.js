@@ -55,7 +55,7 @@ const communityReviewSchema = new mongoose.Schema(
     notes: {
       type: String,
       trim: true,
-      maxlength: [500, "Notes must be 500 characters or fewer."],
+      maxlength: [1000, "Notes must be 1000 characters or fewer."],
       default: "",
     },
   },
@@ -89,7 +89,7 @@ const placeSchema = new mongoose.Schema(
     notes: {
       type: String,
       trim: true,
-      maxlength: [500, "Notes must be 500 characters or fewer."],
+      maxlength: [1000, "Notes must be 1000 characters or fewer."],
       default: "",
     },
     owner: {

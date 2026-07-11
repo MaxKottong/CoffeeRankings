@@ -47,17 +47,17 @@ function emptyAdminSubmitValues() {
     maxTasteRating: "",
     maxLocationRating: "",
     maxVibeRating: "",
-    maxNotes: "",
+    sharedNotes: "",
     margoOrdered: "",
     margoCostRating: "",
     margoTasteRating: "",
     margoLocationRating: "",
     margoVibeRating: "",
-    margoNotes: "",
   };
 }
 
 function readAdminValues(body) {
+  const sharedNotes = body.sharedNotes || body.maxNotes || body.margoNotes || "";
   return {
     name: body.name || "",
     location: body.location || "",
@@ -66,13 +66,12 @@ function readAdminValues(body) {
     maxTasteRating: body.maxTasteRating || "",
     maxLocationRating: body.maxLocationRating || "",
     maxVibeRating: body.maxVibeRating || "",
-    maxNotes: body.maxNotes || "",
+    sharedNotes,
     margoOrdered: body.margoOrdered || "",
     margoCostRating: body.margoCostRating || "",
     margoTasteRating: body.margoTasteRating || "",
     margoLocationRating: body.margoLocationRating || "",
     margoVibeRating: body.margoVibeRating || "",
-    margoNotes: body.margoNotes || "",
   };
 }
 
@@ -205,9 +204,10 @@ function criticSlotForDoc(doc) {
 
 function buildCriticSection(values, prefix) {
   const ratingFields = ["CostRating", "TasteRating", "LocationRating", "VibeRating"];
+  const sharedNotes = String(values.sharedNotes || "").trim();
   const hasAnyInput =
     String(values[`${prefix}Ordered`] || "").trim() ||
-    String(values[`${prefix}Notes`] || "").trim() ||
+    sharedNotes ||
     ratingFields.some((field) => String(values[`${prefix}${field}`] || "").trim());
 
   return {
@@ -217,7 +217,7 @@ function buildCriticSection(values, prefix) {
     tasteRating: values[`${prefix}TasteRating`],
     locationRating: values[`${prefix}LocationRating`],
     vibeRating: values[`${prefix}VibeRating`],
-    notes: String(values[`${prefix}Notes`] || "").trim(),
+    notes: sharedNotes,
   };
 }
 
@@ -246,6 +246,9 @@ function validateAdminCriticValues(values) {
   if (location.length > 160) {
     errors.push({ msg: "Location must be 160 characters or fewer." });
   }
+  if (String(values.sharedNotes || "").trim().length > 1000) {
+    errors.push({ msg: "Shared notes must be 1000 characters or fewer." });
+  }
 
   if (!max.provided && !margo.provided) {
     errors.push({ msg: "Add ratings for at least Max or Margo." });
@@ -260,9 +263,6 @@ function validateAdminCriticValues(values) {
 
     if (section.ordered.length > 200) {
       errors.push({ msg: `${label} ordered field must be 200 characters or fewer.` });
-    }
-    if (section.notes.length > 500) {
-      errors.push({ msg: `${label} notes must be 500 characters or fewer.` });
     }
   }
 
@@ -435,7 +435,10 @@ async function renderPlacePage(
       place.maxReview && typeof place.maxReview.vibeRating === "number"
         ? place.maxReview.vibeRating.toFixed(1)
         : "",
-    maxNotes: (place.maxReview && place.maxReview.notes) || "",
+    sharedNotes:
+      (place.maxReview && place.maxReview.notes) ||
+      (place.margoReview && place.margoReview.notes) ||
+      "",
     margoOrdered: (place.margoReview && place.margoReview.ordered) || "",
     margoCostRating:
       place.margoReview && typeof place.margoReview.costRating === "number"
@@ -453,7 +456,6 @@ async function renderPlacePage(
       place.margoReview && typeof place.margoReview.vibeRating === "number"
         ? place.margoReview.vibeRating.toFixed(1)
         : "",
-    margoNotes: (place.margoReview && place.margoReview.notes) || "",
   };
 
   return res.status(options.statusCode || 200).render("place-detail", {
@@ -798,8 +800,8 @@ router.post(
   ratingValidator("vibeRating", "Vibe"),
   body("notes")
     .trim()
-    .isLength({ max: 500 })
-    .withMessage("Notes must be 500 characters or fewer."),
+    .isLength({ max: 1000 })
+    .withMessage("Notes must be 1000 characters or fewer."),
   async (req, res, next) => {
     const errors = validationResult(req);
     const values = {
@@ -864,8 +866,8 @@ router.put(
   ratingValidator("vibeRating", "Vibe"),
   body("notes")
     .trim()
-    .isLength({ max: 500 })
-    .withMessage("Notes must be 500 characters or fewer."),
+    .isLength({ max: 1000 })
+    .withMessage("Notes must be 1000 characters or fewer."),
   async (req, res, next) => {
     const errors = validationResult(req);
     const values = {
