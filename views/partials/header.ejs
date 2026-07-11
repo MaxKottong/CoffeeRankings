@@ -6,13 +6,24 @@
     <title><%= title %> · Coffee Rankings</title>
     <script>
       (function () {
+        var serverTheme = "<%= (typeof user !== 'undefined' && user && typeof user.isDarkMode !== 'undefined') ? (user.isDarkMode ? 'dark' : 'light') : '' %>" || null;
+
         try {
           var savedTheme = localStorage.getItem("coffee-theme");
-          if (savedTheme === "dark") {
+          var activeTheme = serverTheme || savedTheme;
+          if (activeTheme === "dark") {
             document.documentElement.setAttribute("data-theme", "dark");
+          } else {
+            document.documentElement.removeAttribute("data-theme");
+          }
+
+          if (serverTheme) {
+            localStorage.setItem("coffee-theme", serverTheme);
           }
         } catch (e) {
-          // Ignore storage access errors and use default theme.
+          if (serverTheme === "dark") {
+            document.documentElement.setAttribute("data-theme", "dark");
+          }
         }
       })();
     </script>

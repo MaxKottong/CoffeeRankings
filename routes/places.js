@@ -134,33 +134,6 @@ function placeKeyFromParts(name, location) {
   return `${normalized(name)}|${normalized(location)}`;
 }
 
-function reviewFromLegacyDoc(doc) {
-  const hasAnyReviewValue =
-    String(doc.ordered || "").trim() ||
-    String(doc.notes || "").trim() ||
-    [doc.costRating, doc.tasteRating, doc.locationRating, doc.vibeRating].some(
-      (value) => typeof value === "number"
-    );
-
-  if (!hasAnyReviewValue) return null;
-
-  const cost = typeof doc.costRating === "number" ? doc.costRating : 0;
-  const taste = typeof doc.tasteRating === "number" ? doc.tasteRating : 0;
-  const location = typeof doc.locationRating === "number" ? doc.locationRating : 0;
-  const vibe = typeof doc.vibeRating === "number" ? doc.vibeRating : 0;
-
-  return {
-    _id: doc._id,
-    ordered: doc.ordered || "",
-    notes: doc.notes || "",
-    costRating: cost,
-    tasteRating: taste,
-    locationRating: location,
-    vibeRating: vibe,
-    overallRating: (cost + taste + location + vibe) / 4,
-  };
-}
-
 function reviewFromEmbeddedReview(doc, review) {
   if (!review) return null;
 
@@ -192,22 +165,11 @@ function reviewFromEmbeddedReview(doc, review) {
 
 function pickImageFromDoc(doc) {
   const imageIds = Array.isArray(doc.imageIds) ? doc.imageIds : [];
-  if (imageIds.length) {
-    return {
-      image: { _id: imageIds[imageIds.length - 1] },
-      imagePlaceId: doc._id,
-    };
-  }
-
-  const images = Array.isArray(doc.images) ? doc.images : [];
-  if (images.length) {
-    return {
-      image: images[images.length - 1],
-      imagePlaceId: doc._id,
-    };
-  }
-
-  return { image: null, imagePlaceId: null };
+  if (!imageIds.length) return { image: null, imagePlaceId: null };
+  return {
+    image: { _id: imageIds[imageIds.length - 1] },
+    imagePlaceId: doc._id,
+  };
 }
 
 function ratingFromCommunityReview(review) {
@@ -238,25 +200,6 @@ function toCommunityReviewView(review) {
   return {
     _id: review._id,
     placeId: review.placeId,
-    accountUserId: review.accountUserId || null,
-    accountUsername: String(review.accountUsername || "").trim().toLowerCase(),
-    accountEmail: String(review.accountEmail || "").trim().toLowerCase(),
-    author: review.author || "Anonymous",
-    ordered: review.ordered || "",
-    costRating: Number(review.costRating) || 0,
-    tasteRating: Number(review.tasteRating) || 0,
-    locationRating: Number(review.locationRating) || 0,
-    vibeRating: Number(review.vibeRating) || 0,
-    notes: review.notes || "",
-    createdAt: review.createdAt,
-    updatedAt: review.updatedAt,
-  };
-}
-
-function mapLegacyEmbeddedReview(review, placeId) {
-  return {
-    _id: review._id,
-    placeId,
     accountUserId: review.accountUserId || null,
     accountUsername: String(review.accountUsername || "").trim().toLowerCase(),
     accountEmail: String(review.accountEmail || "").trim().toLowerCase(),
@@ -329,16 +272,6 @@ function isCommunityReviewOwner(review, sessionUser) {
   }
 
   return false;
-}
-
-function criticSlotForDoc(doc) {
-  const slot = String(doc.criticSlot || "").trim().toLowerCase();
-  if (slot === "max" || slot === "margo") return slot;
-
-  const ownerName = String(doc.ownerName || "").trim().toLowerCase();
-  if (ownerName === "max") return "max";
-  if (ownerName === "margo") return "margo";
-  return "";
 }
 
 function buildCriticSection(values, prefix) {
@@ -437,10 +370,7 @@ function consolidatePlaces(places, communityByPlaceId = new Map()) {
 
     groups.get(key).placeIds.push(String(placeDoc._id));
 
-    groups.get(key).docs.push({
-      ...placeDoc,
-      communityReviews: placeDoc.communityReviews || [],
-    });
+    groups.get(key).docs.push(placeDoc);
   });
 
   return Array.from(groups.values())
@@ -448,57 +378,20 @@ function consolidatePlaces(places, communityByPlaceId = new Map()) {
       const sortedDocs = group.docs.slice().sort((a, b) => {
         return new Date(a.createdAt) - new Date(b.createdAt);
       });
-      const modernDoc =
-        sortedDocs
-          .slice()
-          .reverse()
-          .find((doc) =>
-            Boolean(
-              String(doc.criticSlot || "").trim() === "" &&
-                (doc.maxReview || doc.margoReview || (Array.isArray(doc.imageIds) && doc.imageIds.length))
-            )
-          ) || null;
-
-      const legacyMaxDoc =
-        sortedDocs
-          .slice()
-          .reverse()
-          .find((doc) => criticSlotForDoc(doc) === "max") || null;
-      const legacyMargoDoc =
-        sortedDocs
-          .slice()
-          .reverse()
-          .find((doc) => criticSlotForDoc(doc) === "margo") || null;
-
-      const maxReview = modernDoc
-        ? reviewFromEmbeddedReview(modernDoc, modernDoc.maxReview)
-        : reviewFromLegacyDoc(legacyMaxDoc);
-      const margoReview = modernDoc
-        ? reviewFromEmbeddedReview(modernDoc, modernDoc.margoReview)
-        : reviewFromLegacyDoc(legacyMargoDoc);
-
-      const anchor = modernDoc || legacyMaxDoc || legacyMargoDoc || sortedDocs[0];
+      const anchor = sortedDocs[sortedDocs.length - 1] || sortedDocs[0];
+      const maxReview = reviewFromEmbeddedReview(anchor, anchor.maxReview);
+      const margoReview = reviewFromEmbeddedReview(anchor, anchor.margoReview);
       const latestReview = sortedDocs[sortedDocs.length - 1] || null;
       const latestImageDoc =
         sortedDocs
           .slice()
           .reverse()
-          .find(
-            (doc) =>
-              (Array.isArray(doc.imageIds) && doc.imageIds.length) ||
-              (Array.isArray(doc.images) && doc.images.length)
-          ) || null;
+          .find((doc) => Array.isArray(doc.imageIds) && doc.imageIds.length) || null;
       const imageData = latestImageDoc ? pickImageFromDoc(latestImageDoc) : { image: null, imagePlaceId: null };
       const collectionCommunity = group.placeIds.flatMap(
         (id) => communityByPlaceId.get(String(id)) || []
       );
-      const legacyCommunity = sortedDocs.flatMap((doc) =>
-        (doc.communityReviews || []).map((review) => mapLegacyEmbeddedReview(review, doc._id))
-      );
-      const communitySource = collectionCommunity.length
-        ? collectionCommunity
-        : legacyCommunity;
-      const community = summarizeCommunityReviews(communitySource);
+      const community = summarizeCommunityReviews(collectionCommunity);
       const criticAverage = criticsAverage(maxReview, margoReview);
 
       return {
@@ -673,7 +566,6 @@ async function upsertCriticDoc({
   doc.location = common.location;
   doc.owner = ownerEmail;
   doc.ownerName = "Max + Margo";
-  doc.criticSlot = "";
 
   if (maxSection && maxSection.provided) {
     doc.maxReview = {
@@ -783,7 +675,7 @@ router.get("/places/:id", async (req, res, next) => {
 // Serve a place image.
 router.get("/places/:id/image/:imageId", async (req, res, next) => {
   try {
-    const place = await Place.findById(req.params.id).select("images imageIds");
+    const place = await Place.findById(req.params.id).select("imageIds");
     if (!place) return res.status(404).end();
 
     const imageId = String(req.params.imageId || "");
@@ -798,13 +690,7 @@ router.get("/places/:id/image/:imageId", async (req, res, next) => {
       res.set("Cache-Control", "public, max-age=31536000, immutable");
       return res.send(imageDoc.data);
     }
-
-    const legacyImage = place.images.id(req.params.imageId);
-    if (!legacyImage) return res.status(404).end();
-
-    res.set("Content-Type", legacyImage.contentType || "image/jpeg");
-    res.set("Cache-Control", "public, max-age=31536000, immutable");
-    res.send(legacyImage.data);
+    return res.status(404).end();
   } catch (err) {
     next(err);
   }
@@ -851,7 +737,6 @@ router.post(
         (await Place.findOne({
           name: parsed.normalized.name,
           location: parsed.normalized.location,
-          criticSlot: "",
         })) || null;
 
       await upsertCriticDoc({
@@ -903,7 +788,6 @@ router.put(
         (await Place.findOne({
           name: base.name,
           location: base.location,
-          criticSlot: "",
         })) || null;
 
       const adminEmail = String((req.session.user && req.session.user.email) || "")
@@ -949,8 +833,10 @@ router.delete(
         await place.save();
         await Image.findByIdAndDelete(req.params.imageId);
       } else {
-        place.images.pull({ _id: req.params.imageId });
-        await place.save();
+        return res.status(404).render("error", {
+          title: "Not Found",
+          message: "This image could not be found.",
+        });
       }
 
       res.redirect(`/places/${req.params.id}`);
@@ -1105,7 +991,7 @@ router.put(
         });
       }
 
-      const place = await Place.findById(req.params.id).lean();
+      const place = await Place.findById(req.params.id).select("_id").lean();
       if (!place) {
         return res.status(404).render("error", {
           title: "Not Found",
@@ -1113,23 +999,10 @@ router.put(
         });
       }
 
-      let review = await CommunityReview.findOne({
+      const review = await CommunityReview.findOne({
         _id: req.params.reviewId,
         placeId: req.params.id,
       });
-      let isLegacyReview = false;
-      let legacyHostPlace = null;
-
-      if (!review) {
-        legacyHostPlace = await Place.findOne({
-          _id: req.params.id,
-          "communityReviews._id": req.params.reviewId,
-        });
-        review = legacyHostPlace && legacyHostPlace.communityReviews
-          ? legacyHostPlace.communityReviews.id(req.params.reviewId)
-          : null;
-        isLegacyReview = !!review;
-      }
 
       if (!review) {
         return res.status(404).render("error", {
@@ -1157,11 +1030,7 @@ router.put(
       review.vibeRating = Number(values.vibeRating);
       review.notes = values.notes.trim();
 
-      if (isLegacyReview && legacyHostPlace) {
-        await legacyHostPlace.save();
-      } else {
-        await review.save();
-      }
+      await review.save();
       res.redirect(`/places/${req.params.id}#community-reviews`);
     } catch (err) {
       next(err);
@@ -1175,7 +1044,7 @@ router.delete(
   requireAuth,
   async (req, res, next) => {
     try {
-      const place = await Place.findById(req.params.id).lean();
+      const place = await Place.findById(req.params.id).select("_id").lean();
       if (!place) {
         return res.status(404).render("error", {
           title: "Not Found",
@@ -1183,23 +1052,10 @@ router.delete(
         });
       }
 
-      let review = await CommunityReview.findOne({
+      const review = await CommunityReview.findOne({
         _id: req.params.reviewId,
         placeId: req.params.id,
       }).lean();
-      let isLegacyReview = false;
-      let legacyHostPlace = null;
-
-      if (!review) {
-        legacyHostPlace = await Place.findOne({
-          _id: req.params.id,
-          "communityReviews._id": req.params.reviewId,
-        });
-        review = legacyHostPlace && legacyHostPlace.communityReviews
-          ? legacyHostPlace.communityReviews.id(req.params.reviewId)
-          : null;
-        isLegacyReview = !!review;
-      }
 
       if (!review) {
         return res.status(404).render("error", {
@@ -1219,12 +1075,7 @@ router.delete(
         });
       }
 
-      if (isLegacyReview && legacyHostPlace) {
-        review.deleteOne();
-        await legacyHostPlace.save();
-      } else {
-        await CommunityReview.findByIdAndDelete(req.params.reviewId);
-      }
+      await CommunityReview.findByIdAndDelete(req.params.reviewId);
       res.redirect(`/places/${req.params.id}#community-reviews`);
     } catch (err) {
       next(err);

@@ -394,6 +394,34 @@ h4,
   color: rgba(241, 227, 212, 0.78) !important;
 }
 
+:root[data-theme="dark"] h1,
+:root[data-theme="dark"] h2,
+:root[data-theme="dark"] h3,
+:root[data-theme="dark"] h4,
+:root[data-theme="dark"] h5,
+:root[data-theme="dark"] h6,
+:root[data-theme="dark"] .card-title,
+:root[data-theme="dark"] .form-label,
+:root[data-theme="dark"] .form-check-label,
+:root[data-theme="dark"] .meta-value,
+:root[data-theme="dark"] .recent-review-title,
+:root[data-theme="dark"] .category-score,
+:root[data-theme="dark"] .community-score,
+:root[data-theme="dark"] .review-metrics li span,
+:root[data-theme="dark"] .coffee-navbar .nav-link,
+:root[data-theme="dark"] .brand-subtitle {
+  color: #f7ebdf !important;
+}
+
+:root[data-theme="dark"] .meta-label,
+:root[data-theme="dark"] .category-label,
+:root[data-theme="dark"] .form-text,
+:root[data-theme="dark"] .section-title,
+:root[data-theme="dark"] .rank-badge,
+:root[data-theme="dark"] .bean-rating-value {
+  color: rgba(247, 235, 223, 0.86) !important;
+}
+
 :root[data-theme="dark"] .form-control {
   background-color: #2d2722;
   color: #f1e3d4;
@@ -401,7 +429,7 @@ h4,
 }
 
 :root[data-theme="dark"] .form-control::placeholder {
-  color: rgba(241, 227, 212, 0.55);
+  color: rgba(241, 227, 212, 0.7);
 }
 
 :root[data-theme="dark"] .btn-outline-secondary {

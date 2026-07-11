@@ -8,9 +8,7 @@
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
-    "migrate:places": "node lib/migrateLegacyPlaces.js",
-    "migrate:community-reviews": "node lib/migrateCommunityReviews.js"
+    "dev": "nodemon server.js"
   },
   "keywords": [
     "coffee",

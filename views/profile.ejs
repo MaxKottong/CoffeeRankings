@@ -106,7 +106,8 @@
     var toggle = document.getElementById("darkModeToggle");
     if (!toggle) return;
 
-    toggle.checked = document.documentElement.getAttribute("data-theme") === "dark";
+    var persistedFromServer = <%= profileUser && profileUser.isDarkMode ? "true" : "false" %>;
+    toggle.checked = persistedFromServer;
     toggle.addEventListener("change", function () {
       var nextTheme = toggle.checked ? "dark" : "light";
       if (nextTheme === "dark") {
@@ -119,6 +120,16 @@
       } catch (e) {
         // Ignore storage access errors.
       }
+
+      fetch("/profile/theme", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        },
+        body: "isDarkMode=" + encodeURIComponent(String(toggle.checked)),
+      }).catch(function () {
+        // Keep UI responsive even if the network request fails.
+      });
     });
   })();
 </script>

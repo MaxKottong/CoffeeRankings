@@ -46,6 +46,7 @@ function toSessionUser(user) {
     name: user.name,
     location: user.location || "",
     isAdmin: !!user.isAdmin,
+    isDarkMode: !!user.isDarkMode,
   };
 }
 
@@ -56,21 +57,6 @@ function ratingFromCommunityReview(review) {
       review.locationRating +
       review.vibeRating) /
     4
-  );
-}
-
-function reviewBelongsToUser(review, user) {
-  const reviewUserId = String(review.accountUserId || "");
-  const userId = String(user._id || user.id || "");
-  const reviewUsername = String(review.accountUsername || "").toLowerCase();
-  const username = String(user.username || "").toLowerCase();
-  const reviewEmail = String(review.accountEmail || "").toLowerCase();
-  const email = String(user.email || "").toLowerCase();
-
-  return (
-    (reviewUserId && userId && reviewUserId === userId) ||
-    (reviewUsername && username && reviewUsername === username) ||
-    (reviewEmail && email && reviewEmail === email)
   );
 }
 
@@ -107,30 +93,6 @@ async function getRecentCommunityReviewsForUser(user) {
       placeName: place.name,
       overallRating: ratingFromCommunityReview(review),
       createdAt: review.createdAt,
-    });
-  });
-
-  // Legacy fallback for not-yet-migrated embedded community reviews.
-  const legacyPlaces = await Place.find({
-    $or: [
-      { "communityReviews.accountUserId": user._id || user.id },
-      { "communityReviews.accountUsername": user.username },
-      { "communityReviews.accountEmail": user.email },
-    ],
-  })
-    .select("name communityReviews")
-    .lean();
-
-  legacyPlaces.forEach((place) => {
-    (place.communityReviews || []).forEach((review) => {
-      if (!reviewBelongsToUser(review, user)) {
-        return;
-      }
-      recent.push({
-        placeName: place.name,
-        overallRating: ratingFromCommunityReview(review),
-        createdAt: review.createdAt,
-      });
     });
   });
 
@@ -255,6 +217,7 @@ router.post("/signup", async (req, res, next) => {
       location,
       passwordHash,
       isAdmin: false,
+      isDarkMode: false,
       topCoffees: [],
       wantToTry: [],
     });
@@ -399,6 +362,7 @@ router.put("/profile", requireAuth, async (req, res, next) => {
         ...req.session.user,
         location: user.location,
         name: user.name,
+        isDarkMode: !!user.isDarkMode,
       };
 
       res.redirect("/profile");
@@ -406,6 +370,33 @@ router.put("/profile", requireAuth, async (req, res, next) => {
       next(err);
     }
   });
+});
+
+// Persist dark mode preference for signed-in users.
+router.put("/profile/theme", requireAuth, async (req, res, next) => {
+  const raw = String(req.body.isDarkMode || "")
+    .trim()
+    .toLowerCase();
+  const isDarkMode = raw === "true" || raw === "1" || raw === "on";
+
+  try {
+    const user = await User.findById(req.session.user.id);
+    if (!user) {
+      return res.status(404).json({ error: "Profile not found." });
+    }
+
+    user.isDarkMode = isDarkMode;
+    await user.save();
+
+    req.session.user = {
+      ...req.session.user,
+      isDarkMode,
+    };
+
+    return res.json({ ok: true, isDarkMode });
+  } catch (err) {
+    return next(err);
+  }
 });
 
 // Public profile page by username.
