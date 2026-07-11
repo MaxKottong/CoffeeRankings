@@ -63,12 +63,11 @@ const placeSchema = new mongoose.Schema(
       type: criticReviewSchema,
       default: () => ({}),
     },
-    imageIds: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Image",
-      },
-    ],
+    imageId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Image",
+      default: null,
+    },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );

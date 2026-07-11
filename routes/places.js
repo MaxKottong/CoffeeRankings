@@ -40,7 +40,7 @@ function detectImageMime(file) {
 // Store uploaded images in memory so we can persist them in MongoDB.
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024, files: 6 },
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
   fileFilter: (req, file, cb) => {
     const detectedMime = detectImageMime(file);
     if (detectedMime) {
@@ -51,9 +51,9 @@ const upload = multer({
   },
 });
 
-// Accept up to 6 images per place, but keep upload errors friendly.
+// Accept a single image per review to keep the data model simple.
 const uploadImages = (req, res, next) => {
-  upload.array("images", 6)(req, res, (err) => {
+  upload.single("image")(req, res, (err) => {
     if (err) {
       req.uploadError = err.message || "Image upload failed.";
     }
@@ -106,18 +106,19 @@ function readAdminValues(body) {
   };
 }
 
-function filesToImages(files) {
-  return (files || []).map((file) => ({
+function fileToImage(file) {
+  if (!file) return null;
+  return {
     data: file.buffer,
     contentType: file.detectedContentType || file.mimetype,
-  }));
+  };
 }
 
-async function saveImages(files) {
-  const images = filesToImages(files);
-  if (!images.length) return [];
-  const inserted = await Image.insertMany(images);
-  return inserted.map((img) => img._id);
+async function saveImage(file) {
+  const image = fileToImage(file);
+  if (!image) return null;
+  const created = await Image.create(image);
+  return created._id;
 }
 
 function normalized(text) {
@@ -164,10 +165,9 @@ function reviewFromEmbeddedReview(doc, review) {
 }
 
 function pickImageFromDoc(doc) {
-  const imageIds = Array.isArray(doc.imageIds) ? doc.imageIds : [];
-  if (!imageIds.length) return { image: null, imagePlaceId: null };
+  if (!doc.imageId) return { image: null, imagePlaceId: null };
   return {
-    image: { _id: imageIds[imageIds.length - 1] },
+    image: { _id: doc.imageId },
     imagePlaceId: doc._id,
   };
 }
@@ -386,7 +386,7 @@ function consolidatePlaces(places, communityByPlaceId = new Map()) {
         sortedDocs
           .slice()
           .reverse()
-          .find((doc) => Array.isArray(doc.imageIds) && doc.imageIds.length) || null;
+          .find((doc) => !!doc.imageId) || null;
       const imageData = latestImageDoc ? pickImageFromDoc(latestImageDoc) : { image: null, imagePlaceId: null };
       const collectionCommunity = group.placeIds.flatMap(
         (id) => communityByPlaceId.get(String(id)) || []
@@ -559,7 +559,7 @@ async function upsertCriticDoc({
   common,
   maxSection,
   margoSection,
-  imageIds,
+  imageId,
 }) {
   const doc = existing || new Place();
   doc.name = common.name;
@@ -589,10 +589,12 @@ async function upsertCriticDoc({
     };
   }
 
-  if (!Array.isArray(doc.imageIds)) {
-    doc.imageIds = [];
+  if (imageId) {
+    if (doc.imageId && String(doc.imageId) !== String(imageId)) {
+      await Image.findByIdAndDelete(doc.imageId);
+    }
+    doc.imageId = imageId;
   }
-  (imageIds || []).forEach((id) => doc.imageIds.push(id));
   await doc.save();
   return doc;
 }
@@ -718,7 +720,7 @@ router.post(
     }
 
     try {
-      const imageIds = await saveImages(req.files);
+      const imageId = await saveImage(req.file);
       const adminEmail = String((req.session.user && req.session.user.email) || "")
         .trim()
         .toLowerCase();
@@ -735,7 +737,7 @@ router.post(
         common: parsed.normalized,
         maxSection: parsed.normalized.max,
         margoSection: parsed.normalized.margo,
-        imageIds,
+        imageId,
       });
 
       res.redirect("/reviews");
@@ -783,7 +785,7 @@ router.put(
       const adminEmail = String((req.session.user && req.session.user.email) || "")
         .trim()
         .toLowerCase();
-      const imageIds = await saveImages(req.files);
+      const imageId = await saveImage(req.file);
 
       const updated = await upsertCriticDoc({
         existing: existingSingle || base,
@@ -791,7 +793,7 @@ router.put(
         common: parsed.normalized,
         maxSection: parsed.normalized.max,
         margoSection: parsed.normalized.margo,
-        imageIds,
+        imageId,
       });
 
       return res.redirect(`/places/${updated._id}`);
@@ -812,14 +814,10 @@ router.delete(
       if (!place) return res.redirect("/reviews");
 
       const imageId = String(req.params.imageId || "");
-      const imageIdInCollection = (place.imageIds || []).some(
-        (id) => String(id) === imageId
-      );
+      const imageIdInCollection = place.imageId && String(place.imageId) === imageId;
 
       if (imageIdInCollection) {
-        place.imageIds = (place.imageIds || []).filter(
-          (id) => String(id) !== imageId
-        );
+        place.imageId = null;
         await place.save();
         await Image.findByIdAndDelete(req.params.imageId);
       } else {
@@ -848,11 +846,11 @@ router.delete(
 
       const key = placeKey(base);
       const all = await Place.find()
-        .select("_id name location imageIds")
+        .select("_id name location imageId")
         .lean();
       const docs = all.filter((doc) => placeKey(doc) === key);
       const ids = docs.map((doc) => doc._id);
-      const imageIds = docs.flatMap((doc) => doc.imageIds || []);
+      const imageIds = docs.map((doc) => doc.imageId).filter(Boolean);
 
       if (ids.length) {
         if (imageIds.length) {
