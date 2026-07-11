@@ -10,65 +10,7 @@ const { requireAuth, requireAdmin } = require("../middleware/auth");
 
 const router = express.Router();
 
-const RENDERABLE_IMAGE_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "image/bmp",
-  "image/avif",
-  "image/svg+xml",
-]);
-
-function sniffImageContentType(buffer, fallbackType = "") {
-  if (!buffer || !buffer.length) return String(fallbackType || "").toLowerCase();
-
-  const fallback = String(fallbackType || "").toLowerCase();
-  const ascii = buffer.toString("ascii", 0, Math.min(buffer.length, 128)).trim().toLowerCase();
-  if (ascii.startsWith("<svg") || ascii.startsWith("<?xml")) return "image/svg+xml";
-
-  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
-    return "image/jpeg";
-  }
-  if (
-    buffer.length >= 8 &&
-    buffer[0] === 0x89 &&
-    buffer[1] === 0x50 &&
-    buffer[2] === 0x4e &&
-    buffer[3] === 0x47 &&
-    buffer[4] === 0x0d &&
-    buffer[5] === 0x0a &&
-    buffer[6] === 0x1a &&
-    buffer[7] === 0x0a
-  ) {
-    return "image/png";
-  }
-  if (buffer.length >= 6) {
-    const header = buffer.toString("ascii", 0, 6);
-    if (header === "GIF87a" || header === "GIF89a") return "image/gif";
-  }
-  if (
-    buffer.length >= 12 &&
-    buffer.toString("ascii", 0, 4) === "RIFF" &&
-    buffer.toString("ascii", 8, 12) === "WEBP"
-  ) {
-    return "image/webp";
-  }
-  if (buffer.length >= 2 && buffer.toString("ascii", 0, 2) === "BM") {
-    return "image/bmp";
-  }
-  if (
-    buffer.length >= 12 &&
-    buffer.toString("ascii", 4, 8) === "ftyp" &&
-    buffer.toString("ascii", 8, 12).toLowerCase().includes("avif")
-  ) {
-    return "image/avif";
-  }
-
-  return fallback;
-}
-
-// Store uploaded images in memory so we can persist them in MongoDB.
+// Store a single uploaded image in memory so we can persist it in MongoDB.
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024, files: 1 },
@@ -78,11 +20,11 @@ const upload = multer({
     }
     cb(new Error("Only image files can be uploaded."));
   },
-});
+}).single("image");
 
-// Accept a single image per review to keep the data model simple.
+// Accept a single image per review, capturing any upload error for later.
 const uploadImages = (req, res, next) => {
-  upload.single("image")(req, res, (err) => {
+  upload(req, res, (err) => {
     if (err) {
       req.uploadError = err.message || "Image upload failed.";
     }
@@ -136,11 +78,10 @@ function readAdminValues(body) {
 }
 
 function fileToImage(file) {
-  if (!file) return null;
-  const detectedContentType = sniffImageContentType(file.buffer, file.mimetype);
+  if (!file || !file.buffer || !file.buffer.length) return null;
   return {
     data: file.buffer,
-    contentType: detectedContentType || file.mimetype,
+    contentType: file.mimetype || "image/jpeg",
   };
 }
 
@@ -709,24 +650,9 @@ router.get("/places/:id", async (req, res, next) => {
 router.get("/places/:id/image/:imageId", async (req, res, next) => {
   try {
     const imageDoc = await Image.findById(req.params.imageId).lean();
-    if (!imageDoc) return res.status(404).end();
+    if (!imageDoc || !imageDoc.data) return res.status(404).end();
 
-    const contentType = sniffImageContentType(imageDoc.data, imageDoc.contentType || "image/jpeg");
-
-    if (!RENDERABLE_IMAGE_TYPES.has(contentType)) {
-      const fallbackSvg = [
-        '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">',
-        '<rect width="1200" height="800" fill="#ede3d6"/>',
-        '<text x="50%" y="48%" dominant-baseline="middle" text-anchor="middle" fill="#5f4b3f" font-family="Arial, sans-serif" font-size="34">Unsupported image format</text>',
-        '<text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" fill="#7a6556" font-family="Arial, sans-serif" font-size="22">Please re-upload as JPG, PNG, GIF, WEBP, BMP, AVIF, or SVG.</text>',
-        "</svg>",
-      ].join("");
-      res.set("Content-Type", "image/svg+xml");
-      res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
-      return res.status(200).send(fallbackSvg);
-    }
-
-    res.set("Content-Type", contentType);
+    res.set("Content-Type", imageDoc.contentType || "image/jpeg");
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
     return res.send(imageDoc.data);
   } catch (err) {
