@@ -292,13 +292,8 @@ function consolidatePlaces(places) {
         key,
         name: place.name,
         location: place.location,
-        image: place.images[0] || null,
         docs: [],
       });
-    }
-
-    if (!groups.get(key).image && place.images && place.images.length) {
-      groups.get(key).image = place.images[0];
     }
 
     groups.get(key).docs.push({
@@ -317,6 +312,13 @@ function consolidatePlaces(places) {
       const margoReview =
         sortedDocs.find((doc) => criticSlotForDoc(doc) === "margo") || null;
       const anchor = maxReview || margoReview || sortedDocs[0];
+      const latestImageDoc = sortedDocs
+        .slice()
+        .reverse()
+        .find((doc) => Array.isArray(doc.images) && doc.images.length);
+      const image = latestImageDoc
+        ? latestImageDoc.images[latestImageDoc.images.length - 1]
+        : null;
       const latestReview = sortedDocs[sortedDocs.length - 1] || null;
       const community = summarizeCommunityReviews(anchor.communityReviews || []);
       const criticAverage = criticsAverage(maxReview, margoReview);
@@ -326,7 +328,7 @@ function consolidatePlaces(places) {
         anchorId: anchor._id,
         name: group.name,
         location: group.location,
-        image: group.image,
+        image,
         maxReview,
         margoReview,
         criticsAverage: criticAverage,
