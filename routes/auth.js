@@ -290,7 +290,7 @@ router.get("/users/:id/profile-image", async (req, res, next) => {
       return res.status(404).end();
     }
     res.set("Content-Type", user.profileImage.contentType || "image/jpeg");
-    res.set("Cache-Control", "public, max-age=604800");
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
     res.send(user.profileImage.data);
   } catch (err) {
     next(err);

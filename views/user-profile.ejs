@@ -5,7 +5,7 @@
     <div class="profile-header-card">
       <div class="profile-avatar-wrap">
         <% if (profileUser.profileImage && profileUser.profileImage.data) { %>
-          <img class="profile-avatar" src="/users/<%= profileUser._id %>/profile-image" alt="Profile image" />
+          <img class="profile-avatar" src="/users/<%= profileUser._id %>/profile-image?v=<%= new Date(profileUser.updatedAt).getTime() %>" alt="Profile image" />
         <% } else { %>
           <div class="profile-avatar profile-avatar-fallback">PFP</div>
         <% } %>

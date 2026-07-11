@@ -675,22 +675,12 @@ router.get("/places/:id", async (req, res, next) => {
 // Serve a place image.
 router.get("/places/:id/image/:imageId", async (req, res, next) => {
   try {
-    const place = await Place.findById(req.params.id).select("imageIds");
-    if (!place) return res.status(404).end();
+    const imageDoc = await Image.findById(req.params.imageId).lean();
+    if (!imageDoc) return res.status(404).end();
 
-    const imageId = String(req.params.imageId || "");
-    const imageIdInCollection = (place.imageIds || []).some(
-      (id) => String(id) === imageId
-    );
-
-    if (imageIdInCollection) {
-      const imageDoc = await Image.findById(imageId).lean();
-      if (!imageDoc) return res.status(404).end();
-      res.set("Content-Type", imageDoc.contentType || "image/jpeg");
-      res.set("Cache-Control", "public, max-age=31536000, immutable");
-      return res.send(imageDoc.data);
-    }
-    return res.status(404).end();
+    res.set("Content-Type", imageDoc.contentType || "image/jpeg");
+    res.set("Cache-Control", "public, max-age=31536000, immutable");
+    return res.send(imageDoc.data);
   } catch (err) {
     next(err);
   }
