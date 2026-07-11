@@ -2,18 +2,38 @@ const mongoose = require("mongoose");
 
 const ratingField = (label) => ({
   type: Number,
-  required: [true, `A ${label} rating is required.`],
   min: [0, `${label} rating cannot be below 0.`],
   max: [10, `${label} rating cannot be above 10.`],
+  default: null,
 });
 
-const imageSchema = new mongoose.Schema(
+const criticReviewSchema = new mongoose.Schema(
   {
-    data: { type: Buffer, required: true },
-    contentType: { type: String, required: true },
+    ordered: {
+      type: String,
+      trim: true,
+      maxlength: [200, "What was ordered must be 200 characters or fewer."],
+      default: "",
+    },
+    costRating: ratingField("cost"),
+    tasteRating: ratingField("taste"),
+    locationRating: ratingField("location"),
+    vibeRating: ratingField("vibe"),
   },
-  { _id: true }
+  { _id: false }
 );
+
+const imageSchema = new mongoose.Schema({
+  data: {
+    type: Buffer,
+    required: true,
+  },
+  contentType: {
+    type: String,
+    required: true,
+    default: "image/jpeg",
+  },
+});
 
 const communityReviewSchema = new mongoose.Schema(
   {
@@ -26,14 +46,12 @@ const communityReviewSchema = new mongoose.Schema(
       type: String,
       trim: true,
       lowercase: true,
-      maxlength: [40, "Account username must be 40 characters or fewer."],
       default: "",
     },
     accountEmail: {
       type: String,
       trim: true,
       lowercase: true,
-      maxlength: [160, "Account email must be 160 characters or fewer."],
       default: "",
     },
     author: {
@@ -76,6 +94,27 @@ const placeSchema = new mongoose.Schema(
       maxlength: [160, "Location must be 160 characters or fewer."],
       default: "",
     },
+    owner: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      default: "",
+    },
+    ownerUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    ownerName: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    criticSlot: {
+      type: String,
+      enum: ["", "max", "margo"],
+      default: "",
+    },
     ordered: {
       type: String,
       trim: true,
@@ -92,34 +131,18 @@ const placeSchema = new mongoose.Schema(
       maxlength: [500, "Notes must be 500 characters or fewer."],
       default: "",
     },
-    owner: {
-      type: String,
-      trim: true,
-      lowercase: true,
-      default: "",
+    images: {
+      type: [imageSchema],
+      default: [],
     },
-    ownerName: {
-      type: String,
-      trim: true,
-      default: "",
+    communityReviews: {
+      type: [communityReviewSchema],
+      default: [],
     },
-    criticSlot: {
-      type: String,
-      enum: ["max", "margo", ""],
-      default: "",
-    },
-    images: [imageSchema],
-    communityReviews: [communityReviewSchema],
+    maxReview: criticReviewSchema,
+    margoReview: criticReviewSchema,
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
-
-// Overall rating is the average of the four category ratings.
-placeSchema.virtual("overallRating").get(function () {
-  return (
-    (this.costRating + this.tasteRating + this.locationRating + this.vibeRating) /
-    4
-  );
-});
 
 module.exports = mongoose.model("Place", placeSchema);

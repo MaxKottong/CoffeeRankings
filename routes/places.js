@@ -11,7 +11,7 @@ const router = express.Router();
 // Store uploaded images in memory so we can persist them in MongoDB.
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024, files: 6 },
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype && file.mimetype.startsWith("image/")) {
       return cb(null, true);
@@ -20,9 +20,9 @@ const upload = multer({
   },
 });
 
-// Accept up to 6 images per place, but keep upload errors friendly.
+// Accept a single image per review and keep upload errors friendly.
 const uploadImages = (req, res, next) => {
-  upload.array("images", 6)(req, res, (err) => {
+  upload.single("images")(req, res, (err) => {
     if (err) {
       req.uploadError = err.message || "Image upload failed.";
     }
@@ -76,11 +76,12 @@ function readAdminValues(body) {
   };
 }
 
-function filesToImages(files) {
-  return (files || []).map((file) => ({
+function fileToImage(file) {
+  if (!file) return null;
+  return {
     data: file.buffer,
     contentType: file.mimetype,
-  }));
+  };
 }
 
 function normalized(text) {
@@ -457,7 +458,7 @@ async function upsertCriticDoc({
   criticSlot,
   common,
   section,
-  images,
+  image,
 }) {
   if (!section.provided && !existing) {
     return;
@@ -479,7 +480,10 @@ async function upsertCriticDoc({
     doc.notes = section.notes;
   }
 
-  (images || []).forEach((img) => doc.images.push(img));
+  // A new upload replaces the existing review photo.
+  if (image) {
+    doc.images = [image];
+  }
   await doc.save();
 }
 
@@ -596,7 +600,7 @@ router.post(
     }
 
     try {
-      const images = filesToImages(req.files);
+      const image = fileToImage(req.file);
       const adminEmail = String((req.session.user && req.session.user.email) || "")
         .trim()
         .toLowerCase();
@@ -609,7 +613,7 @@ router.post(
           criticSlot: "max",
           common: parsed.normalized,
           section: parsed.normalized.max,
-          images,
+          image,
         }),
         upsertCriticDoc({
           existing: null,
@@ -618,7 +622,7 @@ router.post(
           criticSlot: "margo",
           common: parsed.normalized,
           section: parsed.normalized.margo,
-          images,
+          image,
         }),
       ]);
 
@@ -669,7 +673,7 @@ router.put(
       const adminEmail = String((req.session.user && req.session.user.email) || "")
         .trim()
         .toLowerCase();
-      const images = filesToImages(req.files);
+      const image = fileToImage(req.file);
 
       await Promise.all([
         upsertCriticDoc({
@@ -679,7 +683,7 @@ router.put(
           criticSlot: "max",
           common: parsed.normalized,
           section: parsed.normalized.max,
-          images,
+          image,
         }),
         upsertCriticDoc({
           existing: margoDoc,
@@ -688,7 +692,7 @@ router.put(
           criticSlot: "margo",
           common: parsed.normalized,
           section: parsed.normalized.margo,
-          images,
+          image,
         }),
       ]);
 

@@ -32,6 +32,17 @@
       </div>
     </div>
 
+    <div class="profile-theme-toggle mt-3">
+      <form action="/profile/theme?_method=PUT" method="POST" class="d-flex flex-wrap align-items-center gap-2">
+        <span class="meta-label mb-0">Theme</span>
+        <input type="hidden" name="isDarkMode" value="<%= profileUser.isDarkMode ? 'false' : 'true' %>" />
+        <button type="submit" class="btn btn-sm btn-outline-secondary">
+          <%= profileUser.isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode" %>
+        </button>
+        <span class="theme-status"><%= profileUser.isDarkMode ? "Dark mode is on" : "Light mode is on" %></span>
+      </form>
+    </div>
+
     <% if (error) { %>
       <div class="alert alert-danger mt-3"><%= error %></div>
     <% } %>

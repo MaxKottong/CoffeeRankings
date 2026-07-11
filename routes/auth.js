@@ -4,7 +4,6 @@ const multer = require("multer");
 
 const User = require("../models/User");
 const Place = require("../models/Place");
-const CommunityReview = require("../models/CommunityReview");
 const { requireAuth } = require("../middleware/auth");
 
 const router = express.Router();
@@ -61,38 +60,32 @@ function ratingFromCommunityReview(review) {
 }
 
 async function getRecentCommunityReviewsForUser(user) {
-  const reviewFilter = {
-    $or: [
-      { accountUserId: user._id || user.id },
-      { accountUsername: String(user.username || "").toLowerCase() },
-      { accountEmail: String(user.email || "").toLowerCase() },
-    ],
-  };
-
-  const collectionReviews = await CommunityReview.find(reviewFilter)
-    .select("placeId costRating tasteRating locationRating vibeRating createdAt")
+  const userId = String(user._id || user.id || "").trim();
+  const username = String(user.username || "").trim().toLowerCase();
+  const email = String(user.email || "").trim().toLowerCase();
+  const places = await Place.find()
+    .select("name communityReviews")
     .lean();
 
-  const placeIds = Array.from(
-    new Set(collectionReviews.map((review) => String(review.placeId || "")).filter(Boolean))
-  );
-
-  const placesById = new Map();
-  if (placeIds.length) {
-    const placeDocs = await Place.find({ _id: { $in: placeIds } })
-      .select("_id name")
-      .lean();
-    placeDocs.forEach((place) => placesById.set(String(place._id), place));
-  }
-
   const recent = [];
-  collectionReviews.forEach((review) => {
-    const place = placesById.get(String(review.placeId || ""));
-    if (!place) return;
-    recent.push({
-      placeName: place.name,
-      overallRating: ratingFromCommunityReview(review),
-      createdAt: review.createdAt,
+  places.forEach((place) => {
+    (place.communityReviews || []).forEach((review) => {
+      const matchesByUserId =
+        userId && String(review.accountUserId || "") === userId;
+      const matchesByUsername =
+        username && String(review.accountUsername || "").toLowerCase() === username;
+      const matchesByEmail =
+        email && String(review.accountEmail || "").toLowerCase() === email;
+
+      if (!matchesByUserId && !matchesByUsername && !matchesByEmail) {
+        return;
+      }
+
+      recent.push({
+        placeName: place.name,
+        overallRating: ratingFromCommunityReview(review),
+        createdAt: review.createdAt,
+      });
     });
   });
 
@@ -378,11 +371,19 @@ router.put("/profile/theme", requireAuth, async (req, res, next) => {
     .trim()
     .toLowerCase();
   const isDarkMode = raw === "true" || raw === "1" || raw === "on";
+  const acceptHeader = String(req.get("accept") || "");
+  const wantsJson = req.xhr || acceptHeader.includes("application/json");
 
   try {
     const user = await User.findById(req.session.user.id);
     if (!user) {
-      return res.status(404).json({ error: "Profile not found." });
+      if (wantsJson) {
+        return res.status(404).json({ error: "Profile not found." });
+      }
+      return res.status(404).render("error", {
+        title: "Not Found",
+        message: "Profile not found.",
+      });
     }
 
     user.isDarkMode = isDarkMode;
@@ -393,7 +394,10 @@ router.put("/profile/theme", requireAuth, async (req, res, next) => {
       isDarkMode,
     };
 
-    return res.json({ ok: true, isDarkMode });
+    if (wantsJson) {
+      return res.json({ ok: true, isDarkMode });
+    }
+    return res.redirect("/profile");
   } catch (err) {
     return next(err);
   }

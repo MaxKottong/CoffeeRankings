@@ -128,10 +128,6 @@
                   </div>
                 </div>
 
-                <div class="col-12">
-                  <label for="maxNotes" class="form-label">Max Notes</label>
-                  <textarea class="form-control" id="maxNotes" name="maxNotes" rows="2" maxlength="500"><%= values.maxNotes %></textarea>
-                </div>
               </div>
             </div>
           </div>
@@ -214,13 +210,21 @@
                   </div>
                 </div>
 
-                <div class="col-12">
-                  <label for="margoNotes" class="form-label">Margo Notes</label>
-                  <textarea class="form-control" id="margoNotes" name="margoNotes" rows="2" maxlength="500"><%= values.margoNotes %></textarea>
-                </div>
                 <div class="form-text mt-2">Admins can submit Max and Margo in one action.</div>
               </div>
             </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="notes" class="form-label">Notes</label>
+            <textarea
+              class="form-control"
+              id="notes"
+              name="notes"
+              rows="3"
+              maxlength="500"
+              placeholder="Shared notes for this place"
+            ><%= values.notes %></textarea>
           </div>
         <% } else { %>
           <div class="mb-3">
@@ -312,16 +316,15 @@
         <% } %>
 
         <div class="mb-3">
-          <label for="images" class="form-label">Photos</label>
+          <label for="images" class="form-label">Photo</label>
           <input
             type="file"
             class="form-control"
             id="images"
             name="images"
             accept="image/*"
-            multiple
           />
-          <div class="form-text">Upload up to 6 images (5&nbsp;MB each).</div>
+          <div class="form-text">Upload one image (max 5&nbsp;MB). Uploading a new one replaces the existing photo.</div>
         </div>
 
         <div class="d-flex gap-2 submit-actions">
@@ -335,22 +338,37 @@
 
 <script>
   (function () {
+    function clampRating(value) {
+      var clamped = Math.max(0, Math.min(10, Number(value) || 0));
+      return Math.round(clamped * 2) / 2;
+    }
+
+    function formatRating(value) {
+      var normalized = clampRating(value);
+      if (Math.abs(normalized - Math.round(normalized)) < 0.001) {
+        return String(Math.round(normalized));
+      }
+      return normalized.toFixed(1);
+    }
+
     function initBeanRating(container) {
       var hidden = container.querySelector('input[type="hidden"]');
       var buttons = Array.prototype.slice.call(container.querySelectorAll('.bean-btn'));
       var valueEl = container.querySelector('.bean-rating-value');
       var initialRaw = parseFloat(container.getAttribute('data-initial') || hidden.value || '0');
-      var current = Number.isFinite(initialRaw) ? Math.max(0, Math.min(10, Math.round(initialRaw))) : 0;
+      var current = Number.isFinite(initialRaw) ? clampRating(initialRaw) : 0;
 
       function render(next) {
-        current = Math.max(0, Math.min(10, Number(next) || 0));
+        current = clampRating(next);
         hidden.value = current ? String(current) : '';
-        valueEl.textContent = (current || 0) + '/10';
+        valueEl.textContent = formatRating(current || 0) + '/10';
 
         buttons.forEach(function (btn) {
           var value = Number(btn.getAttribute('data-value') || '0');
           var active = value <= current;
+          var half = !active && value - 0.5 <= current;
           btn.classList.toggle('active', active);
+          btn.classList.toggle('half', half);
           btn.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
       }
@@ -358,6 +376,10 @@
       buttons.forEach(function (btn) {
         btn.addEventListener('click', function () {
           render(Number(btn.getAttribute('data-value') || '0'));
+        });
+        btn.addEventListener('dblclick', function (event) {
+          event.preventDefault();
+          render(Number(btn.getAttribute('data-value') || '0') - 0.5);
         });
       });
 

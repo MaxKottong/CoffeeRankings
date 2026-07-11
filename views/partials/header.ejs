@@ -16,7 +16,7 @@
     />
     <link rel="stylesheet" href="/css/style.css" />
   </head>
-  <body class="d-flex flex-column min-vh-100 coffee-body">
+  <body class="d-flex flex-column min-vh-100 coffee-body <%= (typeof user !== 'undefined' && user && user.isDarkMode) ? 'theme-dark' : '' %>">
     <nav class="navbar navbar-expand-lg coffee-navbar">
       <div class="container">
         <a class="navbar-brand" href="/">
