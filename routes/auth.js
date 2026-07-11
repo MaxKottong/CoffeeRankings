@@ -4,6 +4,7 @@ const multer = require("multer");
 
 const User = require("../models/User");
 const Place = require("../models/Place");
+const CommunityReview = require("../models/CommunityReview");
 const { requireAuth } = require("../middleware/auth");
 
 const router = express.Router();
@@ -74,7 +75,43 @@ function reviewBelongsToUser(review, user) {
 }
 
 async function getRecentCommunityReviewsForUser(user) {
-  const places = await Place.find({
+  const reviewFilter = {
+    $or: [
+      { accountUserId: user._id || user.id },
+      { accountUsername: String(user.username || "").toLowerCase() },
+      { accountEmail: String(user.email || "").toLowerCase() },
+    ],
+  };
+
+  const collectionReviews = await CommunityReview.find(reviewFilter)
+    .select("placeId costRating tasteRating locationRating vibeRating createdAt")
+    .lean();
+
+  const placeIds = Array.from(
+    new Set(collectionReviews.map((review) => String(review.placeId || "")).filter(Boolean))
+  );
+
+  const placesById = new Map();
+  if (placeIds.length) {
+    const placeDocs = await Place.find({ _id: { $in: placeIds } })
+      .select("_id name")
+      .lean();
+    placeDocs.forEach((place) => placesById.set(String(place._id), place));
+  }
+
+  const recent = [];
+  collectionReviews.forEach((review) => {
+    const place = placesById.get(String(review.placeId || ""));
+    if (!place) return;
+    recent.push({
+      placeName: place.name,
+      overallRating: ratingFromCommunityReview(review),
+      createdAt: review.createdAt,
+    });
+  });
+
+  // Legacy fallback for not-yet-migrated embedded community reviews.
+  const legacyPlaces = await Place.find({
     $or: [
       { "communityReviews.accountUserId": user._id || user.id },
       { "communityReviews.accountUsername": user.username },
@@ -84,8 +121,7 @@ async function getRecentCommunityReviewsForUser(user) {
     .select("name communityReviews")
     .lean();
 
-  const recent = [];
-  places.forEach((place) => {
+  legacyPlaces.forEach((place) => {
     (place.communityReviews || []).forEach((review) => {
       if (!reviewBelongsToUser(review, user)) {
         return;

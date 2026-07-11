@@ -23,7 +23,7 @@
       <div class="detail-photo">
         <% if (place.image) { %>
           <img
-            src="/places/<%= place.anchorId %>/image/<%= place.image._id %>"
+            src="/places/<%= place.imagePlaceId || place.anchorId %>/image/<%= place.image._id %>"
             alt="Photo of <%= place.name %>"
             loading="lazy"
           />

@@ -75,7 +75,7 @@
       <div class="featured-image-wrap">
         <% if (latestPlace.image) { %>
           <img
-            src="/places/<%= latestPlace.anchorId %>/image/<%= latestPlace.image._id %>"
+            src="/places/<%= latestPlace.imagePlaceId || latestPlace.anchorId %>/image/<%= latestPlace.image._id %>"
             alt="Photo of <%= latestPlace.name %>"
             class="featured-image"
             loading="lazy"

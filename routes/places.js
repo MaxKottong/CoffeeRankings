@@ -3,17 +3,48 @@ const multer = require("multer");
 const { body, validationResult } = require("express-validator");
 
 const Place = require("../models/Place");
+const Image = require("../models/Image");
+const CommunityReview = require("../models/CommunityReview");
 const User = require("../models/User");
 const { requireAuth, requireAdmin } = require("../middleware/auth");
 
 const router = express.Router();
+
+const IMAGE_EXTENSION_TO_MIME = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".bmp": "image/bmp",
+  ".svg": "image/svg+xml",
+  ".avif": "image/avif",
+  ".heic": "image/heic",
+  ".heif": "image/heif",
+  ".tif": "image/tiff",
+  ".tiff": "image/tiff",
+};
+
+function detectImageMime(file) {
+  const mime = String((file && file.mimetype) || "").trim().toLowerCase();
+  if (mime.startsWith("image/")) {
+    return mime;
+  }
+
+  const originalName = String((file && file.originalname) || "").trim().toLowerCase();
+  const extensionMatch = originalName.match(/\.[a-z0-9]+$/);
+  const extension = extensionMatch ? extensionMatch[0] : "";
+  return IMAGE_EXTENSION_TO_MIME[extension] || "";
+}
 
 // Store uploaded images in memory so we can persist them in MongoDB.
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024, files: 6 },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype && file.mimetype.startsWith("image/")) {
+    const detectedMime = detectImageMime(file);
+    if (detectedMime) {
+      file.detectedContentType = detectedMime;
       return cb(null, true);
     }
     cb(new Error("Only image files can be uploaded."));
@@ -78,8 +109,15 @@ function readAdminValues(body) {
 function filesToImages(files) {
   return (files || []).map((file) => ({
     data: file.buffer,
-    contentType: file.mimetype,
+    contentType: file.detectedContentType || file.mimetype,
   }));
+}
+
+async function saveImages(files) {
+  const images = filesToImages(files);
+  if (!images.length) return [];
+  const inserted = await Image.insertMany(images);
+  return inserted.map((img) => img._id);
 }
 
 function normalized(text) {
@@ -96,42 +134,80 @@ function placeKeyFromParts(name, location) {
   return `${normalized(name)}|${normalized(location)}`;
 }
 
-function toRatingBreakdown(place) {
-  const fallback = typeof place.rating === "number" ? place.rating : 0;
-  const cost =
-    typeof place.costRating === "number" ? place.costRating : fallback;
-  const taste =
-    typeof place.tasteRating === "number" ? place.tasteRating : fallback;
-  const location =
-    typeof place.locationRating === "number" ? place.locationRating : fallback;
-  const vibe =
-    typeof place.vibeRating === "number" ? place.vibeRating : fallback;
-  const overall = (cost + taste + location + vibe) / 4;
+function reviewFromLegacyDoc(doc) {
+  const hasAnyReviewValue =
+    String(doc.ordered || "").trim() ||
+    String(doc.notes || "").trim() ||
+    [doc.costRating, doc.tasteRating, doc.locationRating, doc.vibeRating].some(
+      (value) => typeof value === "number"
+    );
+
+  if (!hasAnyReviewValue) return null;
+
+  const cost = typeof doc.costRating === "number" ? doc.costRating : 0;
+  const taste = typeof doc.tasteRating === "number" ? doc.tasteRating : 0;
+  const location = typeof doc.locationRating === "number" ? doc.locationRating : 0;
+  const vibe = typeof doc.vibeRating === "number" ? doc.vibeRating : 0;
 
   return {
+    _id: doc._id,
+    ordered: doc.ordered || "",
+    notes: doc.notes || "",
     costRating: cost,
     tasteRating: taste,
     locationRating: location,
     vibeRating: vibe,
-    overallRating: overall,
+    overallRating: (cost + taste + location + vibe) / 4,
   };
 }
 
-function toReviewView(place) {
-  const breakdown = toRatingBreakdown(place);
+function reviewFromEmbeddedReview(doc, review) {
+  if (!review) return null;
+
+  const hasAnyReviewValue =
+    String(review.ordered || "").trim() ||
+    String(review.notes || "").trim() ||
+    [review.costRating, review.tasteRating, review.locationRating, review.vibeRating].some(
+      (value) => typeof value === "number"
+    );
+
+  if (!hasAnyReviewValue) return null;
+
+  const cost = typeof review.costRating === "number" ? review.costRating : 0;
+  const taste = typeof review.tasteRating === "number" ? review.tasteRating : 0;
+  const location = typeof review.locationRating === "number" ? review.locationRating : 0;
+  const vibe = typeof review.vibeRating === "number" ? review.vibeRating : 0;
+
   return {
-    _id: place._id,
-    name: place.name,
-    location: place.location,
-    ordered: place.ordered || "",
-    notes: place.notes || "",
-    owner: place.owner || "",
-    ownerName: place.ownerName || "",
-    criticSlot: place.criticSlot || "",
-    createdAt: place.createdAt,
-    images: (place.images || []).map((img) => ({ _id: img._id })),
-    ...breakdown,
+    _id: doc._id,
+    ordered: review.ordered || "",
+    notes: review.notes || "",
+    costRating: cost,
+    tasteRating: taste,
+    locationRating: location,
+    vibeRating: vibe,
+    overallRating: (cost + taste + location + vibe) / 4,
   };
+}
+
+function pickImageFromDoc(doc) {
+  const imageIds = Array.isArray(doc.imageIds) ? doc.imageIds : [];
+  if (imageIds.length) {
+    return {
+      image: { _id: imageIds[imageIds.length - 1] },
+      imagePlaceId: doc._id,
+    };
+  }
+
+  const images = Array.isArray(doc.images) ? doc.images : [];
+  if (images.length) {
+    return {
+      image: images[images.length - 1],
+      imagePlaceId: doc._id,
+    };
+  }
+
+  return { image: null, imagePlaceId: null };
 }
 
 function ratingFromCommunityReview(review) {
@@ -156,6 +232,69 @@ function summarizeCommunityReviews(reviews) {
     average: list.length ? total / list.length : null,
     count: list.length,
   };
+}
+
+function toCommunityReviewView(review) {
+  return {
+    _id: review._id,
+    placeId: review.placeId,
+    accountUserId: review.accountUserId || null,
+    accountUsername: String(review.accountUsername || "").trim().toLowerCase(),
+    accountEmail: String(review.accountEmail || "").trim().toLowerCase(),
+    author: review.author || "Anonymous",
+    ordered: review.ordered || "",
+    costRating: Number(review.costRating) || 0,
+    tasteRating: Number(review.tasteRating) || 0,
+    locationRating: Number(review.locationRating) || 0,
+    vibeRating: Number(review.vibeRating) || 0,
+    notes: review.notes || "",
+    createdAt: review.createdAt,
+    updatedAt: review.updatedAt,
+  };
+}
+
+function mapLegacyEmbeddedReview(review, placeId) {
+  return {
+    _id: review._id,
+    placeId,
+    accountUserId: review.accountUserId || null,
+    accountUsername: String(review.accountUsername || "").trim().toLowerCase(),
+    accountEmail: String(review.accountEmail || "").trim().toLowerCase(),
+    author: review.author || "Anonymous",
+    ordered: review.ordered || "",
+    costRating: Number(review.costRating) || 0,
+    tasteRating: Number(review.tasteRating) || 0,
+    locationRating: Number(review.locationRating) || 0,
+    vibeRating: Number(review.vibeRating) || 0,
+    notes: review.notes || "",
+    createdAt: review.createdAt,
+    updatedAt: review.updatedAt,
+  };
+}
+
+async function loadCommunityReviewsByPlaceIds(placeIds) {
+  const normalizedIds = Array.from(
+    new Set((placeIds || []).map((id) => String(id)).filter(Boolean))
+  );
+  if (!normalizedIds.length) {
+    return new Map();
+  }
+
+  const collectionReviews = await CommunityReview.find({
+    placeId: { $in: normalizedIds },
+  })
+    .sort({ createdAt: 1 })
+    .lean();
+
+  const map = new Map();
+  normalizedIds.forEach((id) => map.set(id, []));
+  collectionReviews.forEach((review) => {
+    const key = String(review.placeId || "");
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(toCommunityReviewView(review));
+  });
+
+  return map;
 }
 
 function criticsAverage(maxReview, margoReview) {
@@ -280,24 +419,26 @@ function validateAdminCriticValues(values) {
   };
 }
 
-function consolidatePlaces(places) {
+function consolidatePlaces(places, communityByPlaceId = new Map()) {
   const groups = new Map();
 
   (places || []).forEach((placeDoc) => {
-    const place = toReviewView(placeDoc);
-    const key = placeKey(place);
+    const key = placeKey(placeDoc);
 
     if (!groups.has(key)) {
       groups.set(key, {
         key,
-        name: place.name,
-        location: place.location,
+        name: placeDoc.name,
+        location: placeDoc.location,
+        placeIds: [],
         docs: [],
       });
     }
 
+    groups.get(key).placeIds.push(String(placeDoc._id));
+
     groups.get(key).docs.push({
-      ...place,
+      ...placeDoc,
       communityReviews: placeDoc.communityReviews || [],
     });
   });
@@ -307,20 +448,57 @@ function consolidatePlaces(places) {
       const sortedDocs = group.docs.slice().sort((a, b) => {
         return new Date(a.createdAt) - new Date(b.createdAt);
       });
-      const maxReview =
-        sortedDocs.find((doc) => criticSlotForDoc(doc) === "max") || null;
-      const margoReview =
-        sortedDocs.find((doc) => criticSlotForDoc(doc) === "margo") || null;
-      const anchor = maxReview || margoReview || sortedDocs[0];
-      const latestImageDoc = sortedDocs
-        .slice()
-        .reverse()
-        .find((doc) => Array.isArray(doc.images) && doc.images.length);
-      const image = latestImageDoc
-        ? latestImageDoc.images[latestImageDoc.images.length - 1]
-        : null;
+      const modernDoc =
+        sortedDocs
+          .slice()
+          .reverse()
+          .find((doc) =>
+            Boolean(
+              String(doc.criticSlot || "").trim() === "" &&
+                (doc.maxReview || doc.margoReview || (Array.isArray(doc.imageIds) && doc.imageIds.length))
+            )
+          ) || null;
+
+      const legacyMaxDoc =
+        sortedDocs
+          .slice()
+          .reverse()
+          .find((doc) => criticSlotForDoc(doc) === "max") || null;
+      const legacyMargoDoc =
+        sortedDocs
+          .slice()
+          .reverse()
+          .find((doc) => criticSlotForDoc(doc) === "margo") || null;
+
+      const maxReview = modernDoc
+        ? reviewFromEmbeddedReview(modernDoc, modernDoc.maxReview)
+        : reviewFromLegacyDoc(legacyMaxDoc);
+      const margoReview = modernDoc
+        ? reviewFromEmbeddedReview(modernDoc, modernDoc.margoReview)
+        : reviewFromLegacyDoc(legacyMargoDoc);
+
+      const anchor = modernDoc || legacyMaxDoc || legacyMargoDoc || sortedDocs[0];
       const latestReview = sortedDocs[sortedDocs.length - 1] || null;
-      const community = summarizeCommunityReviews(anchor.communityReviews || []);
+      const latestImageDoc =
+        sortedDocs
+          .slice()
+          .reverse()
+          .find(
+            (doc) =>
+              (Array.isArray(doc.imageIds) && doc.imageIds.length) ||
+              (Array.isArray(doc.images) && doc.images.length)
+          ) || null;
+      const imageData = latestImageDoc ? pickImageFromDoc(latestImageDoc) : { image: null, imagePlaceId: null };
+      const collectionCommunity = group.placeIds.flatMap(
+        (id) => communityByPlaceId.get(String(id)) || []
+      );
+      const legacyCommunity = sortedDocs.flatMap((doc) =>
+        (doc.communityReviews || []).map((review) => mapLegacyEmbeddedReview(review, doc._id))
+      );
+      const communitySource = collectionCommunity.length
+        ? collectionCommunity
+        : legacyCommunity;
+      const community = summarizeCommunityReviews(communitySource);
       const criticAverage = criticsAverage(maxReview, margoReview);
 
       return {
@@ -328,7 +506,8 @@ function consolidatePlaces(places) {
         anchorId: anchor._id,
         name: group.name,
         location: group.location,
-        image,
+        image: imageData.image,
+        imagePlaceId: imageData.imagePlaceId,
         maxReview,
         margoReview,
         criticsAverage: criticAverage,
@@ -371,8 +550,11 @@ async function renderPlacePage(
   }
 
   const allPlaces = await Place.find().lean();
+  const communityByPlaceId = await loadCommunityReviewsByPlaceIds(
+    allPlaces.map((doc) => doc._id)
+  );
   const key = placeKeyFromParts(base.name, base.location);
-  const grouped = consolidatePlaces(allPlaces);
+  const grouped = consolidatePlaces(allPlaces, communityByPlaceId);
   const place = grouped.find((entry) => entry.key === key);
 
   if (!place) {
@@ -481,47 +663,64 @@ async function renderPlacePage(
 async function upsertCriticDoc({
   existing,
   ownerEmail,
-  ownerName,
-  criticSlot,
   common,
-  section,
-  images,
+  maxSection,
+  margoSection,
+  imageIds,
 }) {
-  if (!section.provided && !existing) {
-    return;
-  }
-
   const doc = existing || new Place();
   doc.name = common.name;
   doc.location = common.location;
   doc.owner = ownerEmail;
-  doc.ownerName = ownerName;
-  doc.criticSlot = criticSlot;
+  doc.ownerName = "Max + Margo";
+  doc.criticSlot = "";
 
-  if (section.provided) {
-    doc.ordered = section.ordered;
-    doc.costRating = section.costRating;
-    doc.tasteRating = section.tasteRating;
-    doc.locationRating = section.locationRating;
-    doc.vibeRating = section.vibeRating;
-    doc.notes = section.notes;
+  if (maxSection && maxSection.provided) {
+    doc.maxReview = {
+      ordered: maxSection.ordered,
+      costRating: maxSection.costRating,
+      tasteRating: maxSection.tasteRating,
+      locationRating: maxSection.locationRating,
+      vibeRating: maxSection.vibeRating,
+      notes: maxSection.notes,
+    };
   }
 
-  (images || []).forEach((img) => doc.images.push(img));
+  if (margoSection && margoSection.provided) {
+    doc.margoReview = {
+      ordered: margoSection.ordered,
+      costRating: margoSection.costRating,
+      tasteRating: margoSection.tasteRating,
+      locationRating: margoSection.locationRating,
+      vibeRating: margoSection.vibeRating,
+      notes: margoSection.notes,
+    };
+  }
+
+  if (!Array.isArray(doc.imageIds)) {
+    doc.imageIds = [];
+  }
+  (imageIds || []).forEach((id) => doc.imageIds.push(id));
   await doc.save();
+  return doc;
 }
 
 // Home page — show only the most recently created review from the DB.
 router.get("/", async (req, res, next) => {
   try {
     const allPlaces = await Place.find().lean();
-    const latestRaw = allPlaces
-      .slice()
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-    const grouped = consolidatePlaces(allPlaces);
-    const latestPlace = latestRaw
-      ? grouped.find((entry) => entry.key === placeKey(latestRaw)) || null
-      : null;
+    const communityByPlaceId = await loadCommunityReviewsByPlaceIds(
+      allPlaces.map((doc) => doc._id)
+    );
+    const grouped = consolidatePlaces(allPlaces, communityByPlaceId);
+    const latestPlace =
+      grouped
+        .slice()
+        .sort(
+          (a, b) =>
+            new Date((b.latestReview && b.latestReview.createdAt) || 0) -
+            new Date((a.latestReview && a.latestReview.createdAt) || 0)
+        )[0] || null;
 
     res.render("index", {
       title: "Coffee Rankings",
@@ -536,7 +735,11 @@ router.get("/", async (req, res, next) => {
 router.get("/reviews", async (req, res, next) => {
   try {
     const searchTerm = String(req.query.q || "").trim();
-    const grouped = consolidatePlaces(await Place.find().lean());
+    const allPlaces = await Place.find().lean();
+    const communityByPlaceId = await loadCommunityReviewsByPlaceIds(
+      allPlaces.map((doc) => doc._id)
+    );
+    const grouped = consolidatePlaces(allPlaces, communityByPlaceId);
     const places = searchTerm
       ? grouped.filter((place) =>
           String(place.name || "")
@@ -580,13 +783,28 @@ router.get("/places/:id", async (req, res, next) => {
 // Serve a place image.
 router.get("/places/:id/image/:imageId", async (req, res, next) => {
   try {
-    const place = await Place.findById(req.params.id).select("images");
+    const place = await Place.findById(req.params.id).select("images imageIds");
     if (!place) return res.status(404).end();
-    const image = place.images.id(req.params.imageId);
-    if (!image) return res.status(404).end();
-    res.set("Content-Type", image.contentType);
+
+    const imageId = String(req.params.imageId || "");
+    const imageIdInCollection = (place.imageIds || []).some(
+      (id) => String(id) === imageId
+    );
+
+    if (imageIdInCollection) {
+      const imageDoc = await Image.findById(imageId).lean();
+      if (!imageDoc) return res.status(404).end();
+      res.set("Content-Type", imageDoc.contentType || "image/jpeg");
+      res.set("Cache-Control", "public, max-age=31536000, immutable");
+      return res.send(imageDoc.data);
+    }
+
+    const legacyImage = place.images.id(req.params.imageId);
+    if (!legacyImage) return res.status(404).end();
+
+    res.set("Content-Type", legacyImage.contentType || "image/jpeg");
     res.set("Cache-Control", "public, max-age=31536000, immutable");
-    res.send(image.data);
+    res.send(legacyImage.data);
   } catch (err) {
     next(err);
   }
@@ -624,31 +842,26 @@ router.post(
     }
 
     try {
-      const images = filesToImages(req.files);
+      const imageIds = await saveImages(req.files);
       const adminEmail = String((req.session.user && req.session.user.email) || "")
         .trim()
         .toLowerCase();
 
-      await Promise.all([
-        upsertCriticDoc({
-          existing: null,
-          ownerEmail: adminEmail,
-          ownerName: "Max",
-          criticSlot: "max",
-          common: parsed.normalized,
-          section: parsed.normalized.max,
-          images,
-        }),
-        upsertCriticDoc({
-          existing: null,
-          ownerEmail: adminEmail,
-          ownerName: "Margo",
-          criticSlot: "margo",
-          common: parsed.normalized,
-          section: parsed.normalized.margo,
-          images,
-        }),
-      ]);
+      const existing =
+        (await Place.findOne({
+          name: parsed.normalized.name,
+          location: parsed.normalized.location,
+          criticSlot: "",
+        })) || null;
+
+      await upsertCriticDoc({
+        existing,
+        ownerEmail: adminEmail,
+        common: parsed.normalized,
+        maxSection: parsed.normalized.max,
+        margoSection: parsed.normalized.margo,
+        imageIds,
+      });
 
       res.redirect("/reviews");
     } catch (err) {
@@ -686,51 +899,28 @@ router.put(
         });
       }
 
-      const key = placeKey(base);
-      const all = await Place.find();
-      const groupDocs = all.filter((doc) => placeKey(doc) === key);
-      const maxDoc =
-        groupDocs.find((doc) => criticSlotForDoc(doc) === "max") || null;
-      const margoDoc =
-        groupDocs.find((doc) => criticSlotForDoc(doc) === "margo") || null;
+      const existingSingle =
+        (await Place.findOne({
+          name: base.name,
+          location: base.location,
+          criticSlot: "",
+        })) || null;
 
       const adminEmail = String((req.session.user && req.session.user.email) || "")
         .trim()
         .toLowerCase();
-      const images = filesToImages(req.files);
+      const imageIds = await saveImages(req.files);
 
-      await Promise.all([
-        upsertCriticDoc({
-          existing: maxDoc,
-          ownerEmail: adminEmail,
-          ownerName: "Max",
-          criticSlot: "max",
-          common: parsed.normalized,
-          section: parsed.normalized.max,
-          images,
-        }),
-        upsertCriticDoc({
-          existing: margoDoc,
-          ownerEmail: adminEmail,
-          ownerName: "Margo",
-          criticSlot: "margo",
-          common: parsed.normalized,
-          section: parsed.normalized.margo,
-          images,
-        }),
-      ]);
+      const updated = await upsertCriticDoc({
+        existing: existingSingle || base,
+        ownerEmail: adminEmail,
+        common: parsed.normalized,
+        maxSection: parsed.normalized.max,
+        margoSection: parsed.normalized.margo,
+        imageIds,
+      });
 
-      const refreshedBase = await Place.findOne({
-        name: parsed.normalized.name,
-        location: parsed.normalized.location,
-        criticSlot: { $in: ["max", "margo"] },
-      }).lean();
-
-      if (refreshedBase) {
-        return res.redirect(`/places/${refreshedBase._id}`);
-      }
-
-      return res.redirect("/reviews");
+      return res.redirect(`/places/${updated._id}`);
     } catch (err) {
       next(err);
     }
@@ -744,9 +934,25 @@ router.delete(
   requireAdmin,
   async (req, res, next) => {
     try {
-      await Place.findByIdAndUpdate(req.params.id, {
-        $pull: { images: { _id: req.params.imageId } },
-      });
+      const place = await Place.findById(req.params.id);
+      if (!place) return res.redirect("/reviews");
+
+      const imageId = String(req.params.imageId || "");
+      const imageIdInCollection = (place.imageIds || []).some(
+        (id) => String(id) === imageId
+      );
+
+      if (imageIdInCollection) {
+        place.imageIds = (place.imageIds || []).filter(
+          (id) => String(id) !== imageId
+        );
+        await place.save();
+        await Image.findByIdAndDelete(req.params.imageId);
+      } else {
+        place.images.pull({ _id: req.params.imageId });
+        await place.save();
+      }
+
       res.redirect(`/places/${req.params.id}`);
     } catch (err) {
       next(err);
@@ -766,14 +972,17 @@ router.delete(
 
       const key = placeKey(base);
       const all = await Place.find()
-        .select("_id name location owner ownerName criticSlot")
+        .select("_id name location imageIds")
         .lean();
-      const ids = all
-        .filter((doc) => placeKey(doc) === key)
-        .filter((doc) => ["max", "margo"].includes(criticSlotForDoc(doc)))
-        .map((doc) => doc._id);
+      const docs = all.filter((doc) => placeKey(doc) === key);
+      const ids = docs.map((doc) => doc._id);
+      const imageIds = docs.flatMap((doc) => doc.imageIds || []);
 
       if (ids.length) {
+        if (imageIds.length) {
+          await Image.deleteMany({ _id: { $in: imageIds } });
+        }
+        await CommunityReview.deleteMany({ placeId: { $in: ids } });
         await Place.deleteMany({ _id: { $in: ids } });
       }
 
@@ -825,23 +1034,28 @@ router.post(
         });
       }
 
-      await Place.findByIdAndUpdate(req.params.id, {
-        $push: {
-          communityReviews: {
-            accountUserId: req.session.user.id,
-            accountUsername: String(req.session.user.username || "")
-              .trim()
-              .toLowerCase(),
-            accountEmail: String(req.session.user.email || "").trim().toLowerCase(),
-            author: values.author.trim() || "Anonymous",
-            ordered: values.ordered.trim(),
-            costRating: Number(values.costRating),
-            tasteRating: Number(values.tasteRating),
-            locationRating: Number(values.locationRating),
-            vibeRating: Number(values.vibeRating),
-            notes: values.notes.trim(),
-          },
-        },
+      const place = await Place.findById(req.params.id).select("_id").lean();
+      if (!place) {
+        return res.status(404).render("error", {
+          title: "Not Found",
+          message: "This coffee place could not be found.",
+        });
+      }
+
+      await CommunityReview.create({
+        placeId: req.params.id,
+        accountUserId: req.session.user.id,
+        accountUsername: String(req.session.user.username || "")
+          .trim()
+          .toLowerCase(),
+        accountEmail: String(req.session.user.email || "").trim().toLowerCase(),
+        author: values.author.trim() || "Anonymous",
+        ordered: values.ordered.trim(),
+        costRating: Number(values.costRating),
+        tasteRating: Number(values.tasteRating),
+        locationRating: Number(values.locationRating),
+        vibeRating: Number(values.vibeRating),
+        notes: values.notes.trim(),
       });
       res.redirect(`/places/${req.params.id}#community-reviews`);
     } catch (err) {
@@ -891,7 +1105,7 @@ router.put(
         });
       }
 
-      const place = await Place.findById(req.params.id);
+      const place = await Place.findById(req.params.id).lean();
       if (!place) {
         return res.status(404).render("error", {
           title: "Not Found",
@@ -899,7 +1113,24 @@ router.put(
         });
       }
 
-      const review = place.communityReviews.id(req.params.reviewId);
+      let review = await CommunityReview.findOne({
+        _id: req.params.reviewId,
+        placeId: req.params.id,
+      });
+      let isLegacyReview = false;
+      let legacyHostPlace = null;
+
+      if (!review) {
+        legacyHostPlace = await Place.findOne({
+          _id: req.params.id,
+          "communityReviews._id": req.params.reviewId,
+        });
+        review = legacyHostPlace && legacyHostPlace.communityReviews
+          ? legacyHostPlace.communityReviews.id(req.params.reviewId)
+          : null;
+        isLegacyReview = !!review;
+      }
+
       if (!review) {
         return res.status(404).render("error", {
           title: "Not Found",
@@ -926,7 +1157,11 @@ router.put(
       review.vibeRating = Number(values.vibeRating);
       review.notes = values.notes.trim();
 
-      await place.save();
+      if (isLegacyReview && legacyHostPlace) {
+        await legacyHostPlace.save();
+      } else {
+        await review.save();
+      }
       res.redirect(`/places/${req.params.id}#community-reviews`);
     } catch (err) {
       next(err);
@@ -940,7 +1175,7 @@ router.delete(
   requireAuth,
   async (req, res, next) => {
     try {
-      const place = await Place.findById(req.params.id);
+      const place = await Place.findById(req.params.id).lean();
       if (!place) {
         return res.status(404).render("error", {
           title: "Not Found",
@@ -948,7 +1183,24 @@ router.delete(
         });
       }
 
-      const review = place.communityReviews.id(req.params.reviewId);
+      let review = await CommunityReview.findOne({
+        _id: req.params.reviewId,
+        placeId: req.params.id,
+      }).lean();
+      let isLegacyReview = false;
+      let legacyHostPlace = null;
+
+      if (!review) {
+        legacyHostPlace = await Place.findOne({
+          _id: req.params.id,
+          "communityReviews._id": req.params.reviewId,
+        });
+        review = legacyHostPlace && legacyHostPlace.communityReviews
+          ? legacyHostPlace.communityReviews.id(req.params.reviewId)
+          : null;
+        isLegacyReview = !!review;
+      }
+
       if (!review) {
         return res.status(404).render("error", {
           title: "Not Found",
@@ -967,8 +1219,12 @@ router.delete(
         });
       }
 
-      review.deleteOne();
-      await place.save();
+      if (isLegacyReview && legacyHostPlace) {
+        review.deleteOne();
+        await legacyHostPlace.save();
+      } else {
+        await CommunityReview.findByIdAndDelete(req.params.reviewId);
+      }
       res.redirect(`/places/${req.params.id}#community-reviews`);
     } catch (err) {
       next(err);
