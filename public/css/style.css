@@ -535,6 +535,25 @@ h4,
   margin-bottom: 1rem;
 }
 
+.detail-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+
+.detail-critics-average {
+  text-align: right;
+}
+
+.detail-critics-label {
+  margin: 0 0 0.25rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: rgba(56, 42, 35, 0.75);
+}
+
 .detail-grid {
   display: grid;
   grid-template-columns: 330px 1fr;
@@ -1041,8 +1060,17 @@ body.coffee-body.theme-dark .review-metrics li {
 }
 
 body.coffee-body.theme-dark .profile-headline h1,
-body.coffee-body.theme-dark .profile-column-card h2 {
+body.coffee-body.theme-dark .profile-column-card h2,
+body.coffee-body.theme-dark .profile-headline p {
   color: #fff8ef;
+}
+
+body.coffee-body.theme-dark .detail-critics-label {
+  color: #e7d9cb !important;
+}
+
+body.coffee-body.theme-dark .rank-badge {
+  color: #e7d9cb;
 }
 
 body.coffee-body.theme-dark .category-rating {
@@ -1169,6 +1197,15 @@ body.coffee-body.theme-dark a:focus {
 
   .detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .detail-header-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .detail-critics-average {
+    text-align: left;
   }
 }
 

@@ -121,6 +121,26 @@ function toRatingBreakdown(place) {
 
 function toReviewView(place) {
   const breakdown = toRatingBreakdown(place);
+  const normalizedEmbedded = (review) => {
+    if (!review) return null;
+    const cost = typeof review.costRating === "number" ? review.costRating : null;
+    const taste = typeof review.tasteRating === "number" ? review.tasteRating : null;
+    const location = typeof review.locationRating === "number" ? review.locationRating : null;
+    const vibe = typeof review.vibeRating === "number" ? review.vibeRating : null;
+    if ([cost, taste, location, vibe].some((value) => value === null)) {
+      return null;
+    }
+
+    return {
+      ordered: review.ordered || "",
+      costRating: cost,
+      tasteRating: taste,
+      locationRating: location,
+      vibeRating: vibe,
+      overallRating: (cost + taste + location + vibe) / 4,
+    };
+  };
+
   return {
     _id: place._id,
     name: place.name,
@@ -131,7 +151,11 @@ function toReviewView(place) {
     ownerName: place.ownerName || "",
     criticSlot: place.criticSlot || "",
     createdAt: place.createdAt,
+    updatedAt: place.updatedAt,
     images: (place.images || []).map((img) => ({ _id: img._id })),
+    communityReviews: place.communityReviews || [],
+    maxReview: normalizedEmbedded(place.maxReview),
+    margoReview: normalizedEmbedded(place.margoReview),
     ...breakdown,
   };
 }
@@ -287,15 +311,43 @@ function consolidatePlaces(places) {
   return Array.from(groups.values())
     .map((group) => {
       const sortedDocs = group.docs.slice().sort((a, b) => {
-        return new Date(a.createdAt) - new Date(b.createdAt);
+        return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt);
       });
-      const maxReview =
-        sortedDocs.find((doc) => criticSlotForDoc(doc) === "max") || null;
-      const margoReview =
-        sortedDocs.find((doc) => criticSlotForDoc(doc) === "margo") || null;
-      const anchor = maxReview || margoReview || sortedDocs[0];
-      const latestReview = sortedDocs[sortedDocs.length - 1] || null;
-      const community = summarizeCommunityReviews(anchor.communityReviews || []);
+
+      let maxReview = null;
+      let margoReview = null;
+      sortedDocs.forEach((doc) => {
+        if (!maxReview && doc.maxReview) {
+          maxReview = doc.maxReview;
+        }
+        if (!margoReview && doc.margoReview) {
+          margoReview = doc.margoReview;
+        }
+
+        const slot = criticSlotForDoc(doc);
+        if ((!maxReview || !margoReview) && (slot === "max" || slot === "margo")) {
+          const legacy = {
+            ordered: doc.ordered || "",
+            costRating: doc.costRating,
+            tasteRating: doc.tasteRating,
+            locationRating: doc.locationRating,
+            vibeRating: doc.vibeRating,
+            overallRating:
+              (doc.costRating + doc.tasteRating + doc.locationRating + doc.vibeRating) / 4,
+          };
+          if (slot === "max" && !maxReview) {
+            maxReview = legacy;
+          }
+          if (slot === "margo" && !margoReview) {
+            margoReview = legacy;
+          }
+        }
+      });
+
+      const anchor = sortedDocs[0];
+      const latestReview = sortedDocs[0] || null;
+      const communityPool = sortedDocs.flatMap((doc) => doc.communityReviews || []);
+      const community = summarizeCommunityReviews(communityPool);
       const criticAverage = criticsAverage(maxReview, margoReview);
 
       return {
@@ -323,6 +375,141 @@ function consolidatePlaces(places) {
       (a, b) =>
         b.compositeScore - a.compositeScore || a.name.localeCompare(b.name)
     );
+}
+
+function buildEmbeddedCriticReview(section) {
+  if (!section || !section.provided) return null;
+  return {
+    ordered: section.ordered,
+    costRating: section.costRating,
+    tasteRating: section.tasteRating,
+    locationRating: section.locationRating,
+    vibeRating: section.vibeRating,
+  };
+}
+
+function buildLegacyCriticReview(doc) {
+  if (
+    typeof doc.costRating !== "number" ||
+    typeof doc.tasteRating !== "number" ||
+    typeof doc.locationRating !== "number" ||
+    typeof doc.vibeRating !== "number"
+  ) {
+    return null;
+  }
+
+  return {
+    ordered: String(doc.ordered || ""),
+    costRating: doc.costRating,
+    tasteRating: doc.tasteRating,
+    locationRating: doc.locationRating,
+    vibeRating: doc.vibeRating,
+  };
+}
+
+async function upsertSinglePlaceFromAdmin({
+  currentPlaceId,
+  normalizedValues,
+  admin,
+  image,
+}) {
+  const key = placeKeyFromParts(normalizedValues.name, normalizedValues.location);
+  const matching = await Place.find({
+    name: new RegExp(`^${String(normalizedValues.name).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"),
+    location: new RegExp(`^${String(normalizedValues.location).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"),
+  });
+
+  let currentDoc = null;
+  if (currentPlaceId) {
+    currentDoc = await Place.findById(currentPlaceId);
+  }
+
+  const candidates = matching.slice();
+  if (currentDoc && !candidates.some((doc) => String(doc._id) === String(currentDoc._id))) {
+    candidates.push(currentDoc);
+  }
+
+  let canonical = null;
+  canonical = currentDoc || null;
+  if (!canonical) {
+    canonical =
+      candidates.find((doc) => doc.maxReview || doc.margoReview || !criticSlotForDoc(doc)) ||
+      candidates[0] ||
+      new Place();
+  }
+
+  const others = candidates.filter((doc) => String(doc._id) !== String(canonical._id));
+  const maybeMaxFromLegacy = others
+    .concat(canonical)
+    .map((doc) => ({ slot: criticSlotForDoc(doc), review: buildLegacyCriticReview(doc) }))
+    .find((entry) => entry.slot === "max" && entry.review)?.review;
+  const maybeMargoFromLegacy = others
+    .concat(canonical)
+    .map((doc) => ({ slot: criticSlotForDoc(doc), review: buildLegacyCriticReview(doc) }))
+    .find((entry) => entry.slot === "margo" && entry.review)?.review;
+
+  const mergedCommunity = [];
+  const seenCommunityIds = new Set();
+  candidates.forEach((doc) => {
+    (doc.communityReviews || []).forEach((review) => {
+      const id = String(review && review._id ? review._id : "");
+      if (!id || seenCommunityIds.has(id)) return;
+      seenCommunityIds.add(id);
+      mergedCommunity.push(review);
+    });
+  });
+
+  const ownerSource = candidates
+    .filter((doc) => String(doc.owner || "").trim())
+    .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0))[0] || null;
+
+  const preservedOwnerEmail = ownerSource
+    ? String(ownerSource.owner || "").trim().toLowerCase()
+    : "";
+  const preservedOwnerName = ownerSource
+    ? String(ownerSource.ownerName || "").trim()
+    : "";
+  const preservedOwnerUserId = ownerSource && ownerSource.ownerUserId ? ownerSource.ownerUserId : null;
+
+  canonical.name = normalizedValues.name;
+  canonical.location = normalizedValues.location;
+  canonical.owner = preservedOwnerEmail || admin.email;
+  canonical.ownerName = preservedOwnerName || admin.username;
+  canonical.ownerUserId = preservedOwnerUserId || admin.userId;
+  canonical.criticSlot = "";
+  canonical.maxReview =
+    buildEmbeddedCriticReview(normalizedValues.max) ||
+    canonical.maxReview ||
+    maybeMaxFromLegacy ||
+    undefined;
+  canonical.margoReview =
+    buildEmbeddedCriticReview(normalizedValues.margo) ||
+    canonical.margoReview ||
+    maybeMargoFromLegacy ||
+    undefined;
+
+  if (mergedCommunity.length) {
+    canonical.communityReviews = mergedCommunity;
+  }
+
+  if (image) {
+    // A new upload replaces the existing place photo.
+    canonical.images = [image];
+  } else if ((!canonical.images || !canonical.images.length) && candidates.length) {
+    const firstWithImage = candidates.find((doc) => doc.images && doc.images.length);
+    if (firstWithImage && firstWithImage.images && firstWithImage.images.length) {
+      canonical.images = [firstWithImage.images[0]];
+    }
+  }
+
+  await canonical.save();
+
+  const duplicateIds = others.map((doc) => doc._id);
+  if (duplicateIds.length) {
+    await Place.deleteMany({ _id: { $in: duplicateIds } });
+  }
+
+  return canonical;
 }
 
 async function renderPlacePage(
@@ -451,42 +638,6 @@ async function renderPlacePage(
   });
 }
 
-async function upsertCriticDoc({
-  existing,
-  ownerEmail,
-  ownerName,
-  criticSlot,
-  common,
-  section,
-  image,
-}) {
-  if (!section.provided && !existing) {
-    return;
-  }
-
-  const doc = existing || new Place();
-  doc.name = common.name;
-  doc.location = common.location;
-  doc.owner = ownerEmail;
-  doc.ownerName = ownerName;
-  doc.criticSlot = criticSlot;
-
-  if (section.provided) {
-    doc.ordered = section.ordered;
-    doc.costRating = section.costRating;
-    doc.tasteRating = section.tasteRating;
-    doc.locationRating = section.locationRating;
-    doc.vibeRating = section.vibeRating;
-    doc.notes = section.notes;
-  }
-
-  // A new upload replaces the existing review photo.
-  if (image) {
-    doc.images = [image];
-  }
-  await doc.save();
-}
-
 // Home page — show only the most recently created review from the DB.
 router.get("/", async (req, res, next) => {
   try {
@@ -604,27 +755,24 @@ router.post(
       const adminEmail = String((req.session.user && req.session.user.email) || "")
         .trim()
         .toLowerCase();
+      const adminUsername = String(
+        (req.session.user && (req.session.user.username || req.session.user.name)) ||
+          adminEmail
+      )
+        .trim()
+        .toLowerCase();
+      const allDocs = await Place.find();
 
-      await Promise.all([
-        upsertCriticDoc({
-          existing: null,
-          ownerEmail: adminEmail,
-          ownerName: "Max",
-          criticSlot: "max",
-          common: parsed.normalized,
-          section: parsed.normalized.max,
-          image,
-        }),
-        upsertCriticDoc({
-          existing: null,
-          ownerEmail: adminEmail,
-          ownerName: "Margo",
-          criticSlot: "margo",
-          common: parsed.normalized,
-          section: parsed.normalized.margo,
-          image,
-        }),
-      ]);
+      await upsertSinglePlaceFromAdmin({
+        currentPlaceId: null,
+        normalizedValues: parsed.normalized,
+        admin: {
+          email: adminEmail,
+          username: adminUsername,
+          userId: req.session.user ? req.session.user.id : null,
+        },
+        image,
+      });
 
       res.redirect("/reviews");
     } catch (err) {
@@ -662,48 +810,30 @@ router.put(
         });
       }
 
-      const key = placeKey(base);
-      const all = await Place.find();
-      const groupDocs = all.filter((doc) => placeKey(doc) === key);
-      const maxDoc =
-        groupDocs.find((doc) => criticSlotForDoc(doc) === "max") || null;
-      const margoDoc =
-        groupDocs.find((doc) => criticSlotForDoc(doc) === "margo") || null;
-
       const adminEmail = String((req.session.user && req.session.user.email) || "")
+        .trim()
+        .toLowerCase();
+      const adminUsername = String(
+        (req.session.user && (req.session.user.username || req.session.user.name)) ||
+          adminEmail
+      )
         .trim()
         .toLowerCase();
       const image = fileToImage(req.file);
 
-      await Promise.all([
-        upsertCriticDoc({
-          existing: maxDoc,
-          ownerEmail: adminEmail,
-          ownerName: "Max",
-          criticSlot: "max",
-          common: parsed.normalized,
-          section: parsed.normalized.max,
-          image,
-        }),
-        upsertCriticDoc({
-          existing: margoDoc,
-          ownerEmail: adminEmail,
-          ownerName: "Margo",
-          criticSlot: "margo",
-          common: parsed.normalized,
-          section: parsed.normalized.margo,
-          image,
-        }),
-      ]);
-
-      const refreshedBase = await Place.findOne({
-        name: parsed.normalized.name,
-        location: parsed.normalized.location,
-        criticSlot: { $in: ["max", "margo"] },
-      }).lean();
+      const refreshedBase = await upsertSinglePlaceFromAdmin({
+        currentPlaceId: req.params.id,
+        normalizedValues: parsed.normalized,
+        admin: {
+          email: adminEmail,
+          username: adminUsername,
+          userId: req.session.user ? req.session.user.id : null,
+        },
+        image,
+      });
 
       if (refreshedBase) {
-        return res.redirect(`/places/${refreshedBase._id}`);
+        return res.redirect(`/places/${refreshedBase._id.toString()}`);
       }
 
       return res.redirect("/reviews");
@@ -746,7 +876,6 @@ router.delete(
         .lean();
       const ids = all
         .filter((doc) => placeKey(doc) === key)
-        .filter((doc) => ["max", "margo"].includes(criticSlotForDoc(doc)))
         .map((doc) => doc._id);
 
       if (ids.length) {

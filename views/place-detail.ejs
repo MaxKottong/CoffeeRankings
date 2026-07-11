@@ -7,8 +7,16 @@
 
   <article class="detail-shell">
     <div class="detail-header">
-      <h1 class="mb-1"><%= place.name %></h1>
-      <p class="text-body-secondary mb-0"><%= place.location || "Location not listed" %></p>
+      <div class="detail-header-top">
+        <div>
+          <h1 class="mb-1"><%= place.name %></h1>
+          <p class="text-body-secondary mb-0"><%= place.location || "Location not listed" %></p>
+        </div>
+        <div class="detail-critics-average" title="Max + Margo overall average out of 10">
+          <p class="detail-critics-label">Max + Margo Score</p>
+          <span class="rating-pill"><%= typeof place.criticsAverage === "number" ? place.criticsAverage.toFixed(1) : "-" %><small>/10</small></span>
+        </div>
+      </div>
       <% if (typeof user !== "undefined" && user && user.isAdmin) { %>
         <div class="d-flex flex-wrap gap-2 mt-3">
           <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleCriticEdit()">Edit Max + Margo</button>
