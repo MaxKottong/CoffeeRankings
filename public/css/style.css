@@ -1040,6 +1040,11 @@ body.coffee-body.theme-dark .review-metrics li {
   border-color: rgba(214, 177, 142, 0.26);
 }
 
+body.coffee-body.theme-dark .profile-headline h1,
+body.coffee-body.theme-dark .profile-column-card h2 {
+  color: #fff8ef;
+}
+
 body.coffee-body.theme-dark .category-rating {
   background-color: #3a2d26;
   border-color: rgba(214, 177, 142, 0.28);
