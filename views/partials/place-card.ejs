@@ -2,7 +2,7 @@
   <a class="card h-100 shadow-sm coffee-card coffee-card-link" id="place-<%= place.anchorId %>" href="/places/<%= place.anchorId %>">
     <% if (place.image) { %>
       <img
-        src="/places/<%= place.imagePlaceId || place.anchorId %>/image/<%= place.image._id %>"
+        src="/places/<%= place.imagePlaceId || place.anchorId %>/image/<%= place.image._id %>?t=<%= encodeURIComponent(String(place.imageUpdatedAt || "")) %>"
         class="d-block w-100 coffee-photo"
         alt="Photo of <%= place.name %>"
         loading="lazy"
@@ -10,12 +10,13 @@
     <% } %>
 
     <div class="card-body d-flex flex-column">
-      <% const displayRating = place.communityRating !== null ? place.communityRating : place.criticsAverage; %>
-      <% const ratingStars = displayRating !== null && typeof displayRating === "number" ? Math.round(displayRating / 2) : 0; %>
+      <% const criticsRating = place.criticsAverage; %>
+      <% const communityRating = place.communityRating; %>
+      <% const communityStars = communityRating !== null && typeof communityRating === "number" ? Math.round(communityRating / 2) : 0; %>
       <div class="d-flex justify-content-between align-items-start mb-2">
         <span class="rank-badge">Rank #<%= index + 1 %></span>
-        <span class="rating-pill" title="Overall rating out of 10">
-          <%= displayRating !== null && typeof displayRating === "number" ? displayRating.toFixed(1) : "-" %><small>/10</small>
+        <span class="rating-pill" title="Max + Margo overall average out of 10">
+          <%= criticsRating !== null && typeof criticsRating === "number" ? criticsRating.toFixed(1) : "-" %><small>/10</small>
         </span>
       </div>
 
@@ -59,14 +60,14 @@
       </div>
 
       <div class="community-summary mt-auto">
-        <p class="meta-label mb-1">Overall Rating</p>
+        <p class="meta-label mb-1">Community Overall</p>
         <p class="community-score">
-          <%= displayRating !== null && typeof displayRating === "number" ? displayRating.toFixed(1) + "/10" : "No ratings yet" %>
+          <%= communityRating !== null && typeof communityRating === "number" ? communityRating.toFixed(1) + "/10" : "No ratings yet" %>
         </p>
-        <% if (displayRating !== null && typeof displayRating === "number") { %>
-          <p class="review-stars mb-1" aria-label="Overall rating <%= displayRating.toFixed(1) %> out of 10">
+        <% if (communityRating !== null && typeof communityRating === "number") { %>
+          <p class="review-stars mb-1" aria-label="Community rating <%= communityRating.toFixed(1) %> out of 10">
             <% for (let i = 1; i <= 5; i += 1) { %>
-              <span class="review-star <%= i <= ratingStars ? "filled" : "" %>"><%- i <= ratingStars ? "&#9733;" : "&#9734;" %></span>
+              <span class="review-star <%= i <= communityStars ? "filled" : "" %>"><%- i <= communityStars ? "&#9733;" : "&#9734;" %></span>
             <% } %>
           </p>
         <% } %>

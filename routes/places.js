@@ -401,6 +401,7 @@ function consolidatePlaces(places, communityByPlaceId = new Map()) {
         location: group.location,
         image: imageData.image,
         imagePlaceId: imageData.imagePlaceId,
+        imageUpdatedAt: latestImageDoc && latestImageDoc.updatedAt ? latestImageDoc.updatedAt : null,
         maxReview,
         margoReview,
         criticsAverage: criticAverage,
@@ -681,7 +682,7 @@ router.get("/places/:id/image/:imageId", async (req, res, next) => {
     if (!imageDoc) return res.status(404).end();
 
     res.set("Content-Type", imageDoc.contentType || "image/jpeg");
-    res.set("Cache-Control", "public, max-age=31536000, immutable");
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
     return res.send(imageDoc.data);
   } catch (err) {
     next(err);

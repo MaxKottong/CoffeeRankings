@@ -422,6 +422,24 @@ h4,
   color: rgba(247, 235, 223, 0.86) !important;
 }
 
+:root[data-theme="dark"] .community-item,
+:root[data-theme="dark"] .community-item p,
+:root[data-theme="dark"] .community-item strong,
+:root[data-theme="dark"] .community-item .small,
+:root[data-theme="dark"] .community-item .category-label,
+:root[data-theme="dark"] .community-item .category-score {
+  color: #f7ebdf !important;
+}
+
+:root[data-theme="dark"] .community-profile-link {
+  color: #d8c4ad;
+}
+
+:root[data-theme="dark"] .community-profile-link:hover,
+:root[data-theme="dark"] .community-profile-link:focus {
+  color: #f3e6d7;
+}
+
 :root[data-theme="dark"] .form-control {
   background-color: #2d2722;
   color: #f1e3d4;

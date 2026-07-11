@@ -75,8 +75,8 @@
       <div class="featured-image-wrap">
         <% if (latestPlace.image) { %>
           <img
-            src="/places/<%= latestPlace.imagePlaceId || latestPlace.anchorId %>/image/<%= latestPlace.image._id %>"
-            alt="Photo of <%= latestPlace.name %>"
+            src="/places/<%= latestPlace.imagePlaceId || latestPlace.anchorId %>/image/<%= latestPlace.image._id %>?t=<%= encodeURIComponent(String(latestPlace.imageUpdatedAt || "")) %>"
+              alt="Featured coffee at <%= latestPlace.name %>"
             class="featured-image"
             loading="lazy"
           />
