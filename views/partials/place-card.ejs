@@ -30,6 +30,12 @@
           <h4>Max</h4>
           <% if (place.maxReview) { %>
             <p class="review-ordered"><strong>Ordered:</strong> <%= place.maxReview.ordered || "-" %></p>
+            <% if (place.maxReview.drinkSize) { %>
+              <p class="review-ordered"><strong>Size:</strong> <%= place.maxReview.drinkSize %></p>
+            <% } %>
+            <% if (typeof place.maxReview.drinkCost === "number") { %>
+              <p class="review-ordered"><strong>Cost:</strong> $<%= place.maxReview.drinkCost.toFixed(2) %></p>
+            <% } %>
             <ul class="review-metrics list-unstyled">
               <li>Cost <span><%= place.maxReview.costRating.toFixed(1) %></span></li>
               <li>Taste <span><%= place.maxReview.tasteRating.toFixed(1) %></span></li>
@@ -46,6 +52,12 @@
           <h4>Margo</h4>
           <% if (place.margoReview) { %>
             <p class="review-ordered"><strong>Ordered:</strong> <%= place.margoReview.ordered || "-" %></p>
+            <% if (place.margoReview.drinkSize) { %>
+              <p class="review-ordered"><strong>Size:</strong> <%= place.margoReview.drinkSize %></p>
+            <% } %>
+            <% if (typeof place.margoReview.drinkCost === "number") { %>
+              <p class="review-ordered"><strong>Cost:</strong> $<%= place.margoReview.drinkCost.toFixed(2) %></p>
+            <% } %>
             <ul class="review-metrics list-unstyled">
               <li>Cost <span><%= place.margoReview.costRating.toFixed(1) %></span></li>
               <li>Taste <span><%= place.margoReview.tasteRating.toFixed(1) %></span></li>

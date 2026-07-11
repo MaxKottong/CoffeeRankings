@@ -24,7 +24,7 @@
 
       <form action="/submit" method="POST" class="card shadow-sm p-4 submit-form-card" enctype="multipart/form-data" novalidate>
         <div class="mb-4">
-          <label for="name" class="form-label">Name of the place *</label>
+          <label for="name" class="form-label">Name *</label>
           <input
             type="text"
             class="form-control"
@@ -53,22 +53,21 @@
           <div class="row g-4 mb-4">
             <div class="col-12">
               <div class="review-block">
-                <h3 class="h4 mb-3">Max Review</h3>
+                <h3 class="h4 mb-3">Max's Review</h3>
                 <div class="mb-3">
-                  <label for="maxOrdered" class="form-label">What Max ordered</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="maxOrdered"
-                    name="maxOrdered"
-                    maxlength="200"
-                    value="<%= values.maxOrdered %>"
-                  />
-                </div>
-
+                <label for="maxOrdered" class="form-label">Max's Order</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="maxOrdered"
+                  name="maxOrdered"
+                  maxlength="200"
+                  value="<%= values.maxOrdered %>"
+                />
+              </div>
                 <div class="bean-grid mb-3">
                   <div>
-                    <label class="form-label">Max Cost</label>
+                    <label class="form-label">Cost</label>
                     <div class="bean-rating" data-initial="<%= values.maxCostRating %>">
                       <input type="hidden" name="maxCostRating" value="<%= values.maxCostRating %>" />
                       <div class="bean-rating-buttons" role="radiogroup" aria-label="Max cost rating out of ten">
@@ -83,7 +82,7 @@
                   </div>
 
                   <div>
-                    <label class="form-label">Max Taste</label>
+                    <label class="form-label">Taste</label>
                     <div class="bean-rating" data-initial="<%= values.maxTasteRating %>">
                       <input type="hidden" name="maxTasteRating" value="<%= values.maxTasteRating %>" />
                       <div class="bean-rating-buttons" role="radiogroup" aria-label="Max taste rating out of ten">
@@ -98,10 +97,10 @@
                   </div>
 
                   <div>
-                    <label class="form-label">Max Location</label>
+                    <label class="form-label">Location</label>
                     <div class="bean-rating" data-initial="<%= values.maxLocationRating %>">
                       <input type="hidden" name="maxLocationRating" value="<%= values.maxLocationRating %>" />
-                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Max location rating out of ten">
+                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Location rating out of ten">
                         <% for (let i = 1; i <= 10; i += 1) { %>
                           <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
                             <span class="bean-dot"></span>
@@ -113,10 +112,10 @@
                   </div>
 
                   <div>
-                    <label class="form-label">Max Vibe</label>
+                    <label class="form-label">Vibe</label>
                     <div class="bean-rating" data-initial="<%= values.maxVibeRating %>">
                       <input type="hidden" name="maxVibeRating" value="<%= values.maxVibeRating %>" />
-                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Max vibe rating out of ten">
+                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Vibe rating out of ten">
                         <% for (let i = 1; i <= 10; i += 1) { %>
                           <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
                             <span class="bean-dot"></span>
@@ -135,9 +134,9 @@
           <div class="row g-4 mb-4">
             <div class="col-12">
               <div class="review-block">
-                <h3 class="h4 mb-3">Margo Review</h3>
+                <h3 class="h4 mb-3">Margo's Review</h3>
                 <div class="mb-3">
-                  <label for="margoOrdered" class="form-label">What Margo ordered</label>
+                  <label for="margoOrdered" class="form-label">Margo's Order</label>
                   <input
                     type="text"
                     class="form-control"
@@ -147,13 +146,12 @@
                     value="<%= values.margoOrdered %>"
                   />
                 </div>
-
                 <div class="bean-grid mb-3">
                   <div>
-                    <label class="form-label">Margo Cost</label>
+                    <label class="form-label">Cost</label>
                     <div class="bean-rating" data-initial="<%= values.margoCostRating %>">
                       <input type="hidden" name="margoCostRating" value="<%= values.margoCostRating %>" />
-                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Margo cost rating out of ten">
+                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Cost rating out of ten">
                         <% for (let i = 1; i <= 10; i += 1) { %>
                           <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
                             <span class="bean-dot"></span>
@@ -165,10 +163,10 @@
                   </div>
 
                   <div>
-                    <label class="form-label">Margo Taste</label>
+                    <label class="form-label">Taste</label>
                     <div class="bean-rating" data-initial="<%= values.margoTasteRating %>">
                       <input type="hidden" name="margoTasteRating" value="<%= values.margoTasteRating %>" />
-                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Margo taste rating out of ten">
+                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Taste rating out of ten">
                         <% for (let i = 1; i <= 10; i += 1) { %>
                           <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
                             <span class="bean-dot"></span>
@@ -180,10 +178,10 @@
                   </div>
 
                   <div>
-                    <label class="form-label">Margo Location</label>
+                    <label class="form-label">Location</label>
                     <div class="bean-rating" data-initial="<%= values.margoLocationRating %>">
                       <input type="hidden" name="margoLocationRating" value="<%= values.margoLocationRating %>" />
-                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Margo location rating out of ten">
+                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Location rating out of ten">
                         <% for (let i = 1; i <= 10; i += 1) { %>
                           <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
                             <span class="bean-dot"></span>
@@ -195,10 +193,10 @@
                   </div>
 
                   <div>
-                    <label class="form-label">Margo Vibe</label>
+                    <label class="form-label">Vibe</label>
                     <div class="bean-rating" data-initial="<%= values.margoVibeRating %>">
                       <input type="hidden" name="margoVibeRating" value="<%= values.margoVibeRating %>" />
-                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Margo vibe rating out of ten">
+                      <div class="bean-rating-buttons" role="radiogroup" aria-label="Vibe rating out of ten">
                         <% for (let i = 1; i <= 10; i += 1) { %>
                           <button type="button" class="bean-btn" data-value="<%= i %>" aria-label="<%= i %> out of 10">
                             <span class="bean-dot"></span>
@@ -209,8 +207,6 @@
                     </div>
                   </div>
                 </div>
-
-                <div class="form-text mt-2">Admins can submit Max and Margo in one action.</div>
               </div>
             </div>
           </div>
