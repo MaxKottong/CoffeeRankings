@@ -331,10 +331,6 @@
         <% } else { %>
           <div class="community-list">
             <% place.communityReviews.forEach(function (review) { %>
-              <% const reviewOwnerById = user && review.accountUserId && String(review.accountUserId) === String(user.id || ""); %>
-              <% const reviewOwnerByUsername = user && review.accountUsername && String(review.accountUsername).toLowerCase() === String(user.username || "").toLowerCase(); %>
-              <% const reviewOwnerByEmail = user && review.accountEmail && String(review.accountEmail).toLowerCase() === String(user.email || "").toLowerCase(); %>
-              <% const canManageReview = user && (user.isAdmin || reviewOwnerById || reviewOwnerByUsername || reviewOwnerByEmail); %>
               <article class="community-item">
                 <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
                   <div>
@@ -357,49 +353,9 @@
                 <% if (review.notes) { %>
                   <p class="mb-0"><%= review.notes %></p>
                 <% } %>
-                <% if (canManageReview) { %>
-                  <div class="d-flex flex-wrap gap-2 mt-2">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleCommunityEdit('<%= review._id %>')">Edit Review</button>
-                    <form action="/places/<%= place.anchorId %>/community-reviews/<%= review._id %>?_method=DELETE" method="POST" onsubmit="return confirm('Delete this community review?');">
-                      <button type="submit" class="btn btn-sm btn-outline-danger">Delete Review</button>
-                    </form>
-                  </div>
-
-                  <form id="community-edit-<%= review._id %>" action="/places/<%= place.anchorId %>/community-reviews/<%= review._id %>?_method=PUT" method="POST" class="mt-3 d-none">
-                    <div class="mb-2">
-                      <label class="form-label">Name</label>
-                      <input type="text" class="form-control form-control-sm" name="author" maxlength="60" value="<%= review.author || "" %>" />
-                    </div>
-                    <div class="mb-2">
-                      <label class="form-label">Ordered</label>
-                      <input type="text" class="form-control form-control-sm" name="ordered" maxlength="200" value="<%= review.ordered || "" %>" />
-                    </div>
-                    <div class="row g-2 mb-2">
-                      <div class="col-6">
-                        <label class="form-label">Cost *</label>
-                        <input type="number" class="form-control form-control-sm" name="costRating" min="0" max="10" step="0.1" value="<%= review.costRating %>" required />
-                      </div>
-                      <div class="col-6">
-                        <label class="form-label">Taste *</label>
-                        <input type="number" class="form-control form-control-sm" name="tasteRating" min="0" max="10" step="0.1" value="<%= review.tasteRating %>" required />
-                      </div>
-                      <div class="col-6">
-                        <label class="form-label">Location *</label>
-                        <input type="number" class="form-control form-control-sm" name="locationRating" min="0" max="10" step="0.1" value="<%= review.locationRating %>" required />
-                      </div>
-                      <div class="col-6">
-                        <label class="form-label">Vibe *</label>
-                        <input type="number" class="form-control form-control-sm" name="vibeRating" min="0" max="10" step="0.1" value="<%= review.vibeRating %>" required />
-                      </div>
-                    </div>
-                    <div class="mb-2">
-                      <label class="form-label">Notes</label>
-                      <textarea class="form-control form-control-sm" name="notes" rows="2" maxlength="500"><%= review.notes || "" %></textarea>
-                    </div>
-                    <div class="d-flex gap-2">
-                      <button type="submit" class="btn btn-sm btn-primary">Save</button>
-                      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleCommunityEdit('<%= review._id %>')">Cancel</button>
-                    </div>
+                <% if (typeof user !== "undefined" && user && user.isAdmin) { %>
+                  <form action="/places/<%= place.anchorId %>/community-reviews/<%= review._id %>?_method=DELETE" method="POST" class="mt-2" onsubmit="return confirm('Delete this community review?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete Review</button>
                   </form>
                 <% } %>
               </article>
@@ -512,12 +468,6 @@
 <script>
   function toggleCriticEdit() {
     var panel = document.getElementById("critic-edit-panel");
-    if (!panel) return;
-    panel.classList.toggle("d-none");
-  }
-
-  function toggleCommunityEdit(reviewId) {
-    var panel = document.getElementById("community-edit-" + reviewId);
     if (!panel) return;
     panel.classList.toggle("d-none");
   }

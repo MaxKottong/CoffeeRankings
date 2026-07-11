@@ -169,30 +169,6 @@ function criticsAverage(maxReview, margoReview) {
   return scores.reduce((acc, score) => acc + score, 0) / scores.length;
 }
 
-function isCommunityReviewOwner(review, sessionUser) {
-  if (!review || !sessionUser) return false;
-
-  const reviewUserId = String(review.accountUserId || "");
-  const sessionUserId = String(sessionUser.id || "");
-  if (reviewUserId && sessionUserId && reviewUserId === sessionUserId) {
-    return true;
-  }
-
-  const reviewUsername = String(review.accountUsername || "").trim().toLowerCase();
-  const sessionUsername = String(sessionUser.username || "").trim().toLowerCase();
-  if (reviewUsername && sessionUsername && reviewUsername === sessionUsername) {
-    return true;
-  }
-
-  const reviewEmail = String(review.accountEmail || "").trim().toLowerCase();
-  const sessionEmail = String(sessionUser.email || "").trim().toLowerCase();
-  if (reviewEmail && sessionEmail && reviewEmail === sessionEmail) {
-    return true;
-  }
-
-  return false;
-}
-
 function criticSlotForDoc(doc) {
   const slot = String(doc.criticSlot || "").trim().toLowerCase();
   if (slot === "max" || slot === "margo") return slot;
@@ -847,124 +823,15 @@ router.post(
 );
 
 // Delete a community review (admins only).
-router.put(
-  "/places/:id/community-reviews/:reviewId",
-  requireAuth,
-  body("author")
-    .trim()
-    .isLength({ max: 60 })
-    .withMessage("Name must be 60 characters or fewer."),
-  body("ordered")
-    .trim()
-    .isLength({ max: 200 })
-    .withMessage("What was ordered must be 200 characters or fewer."),
-  ratingValidator("costRating", "Cost"),
-  ratingValidator("tasteRating", "Taste"),
-  ratingValidator("locationRating", "Location"),
-  ratingValidator("vibeRating", "Vibe"),
-  body("notes")
-    .trim()
-    .isLength({ max: 500 })
-    .withMessage("Notes must be 500 characters or fewer."),
-  async (req, res, next) => {
-    const errors = validationResult(req);
-    const values = {
-      author: req.body.author || "",
-      ordered: req.body.ordered || "",
-      costRating: req.body.costRating || "",
-      tasteRating: req.body.tasteRating || "",
-      locationRating: req.body.locationRating || "",
-      vibeRating: req.body.vibeRating || "",
-      notes: req.body.notes || "",
-    };
-
-    try {
-      if (!errors.isEmpty()) {
-        return renderPlacePage(req, res, req.params.id, {
-          statusCode: 400,
-          communityErrors: errors.array(),
-          communityValues: values,
-        });
-      }
-
-      const place = await Place.findById(req.params.id);
-      if (!place) {
-        return res.status(404).render("error", {
-          title: "Not Found",
-          message: "This coffee place could not be found.",
-        });
-      }
-
-      const review = place.communityReviews.id(req.params.reviewId);
-      if (!review) {
-        return res.status(404).render("error", {
-          title: "Not Found",
-          message: "This community review could not be found.",
-        });
-      }
-
-      const canManage =
-        !!(req.session.user && req.session.user.isAdmin) ||
-        isCommunityReviewOwner(review, req.session.user);
-
-      if (!canManage) {
-        return res.status(403).render("error", {
-          title: "Forbidden",
-          message: "You can only edit your own community reviews.",
-        });
-      }
-
-      review.author = values.author.trim() || "Anonymous";
-      review.ordered = values.ordered.trim();
-      review.costRating = Number(values.costRating);
-      review.tasteRating = Number(values.tasteRating);
-      review.locationRating = Number(values.locationRating);
-      review.vibeRating = Number(values.vibeRating);
-      review.notes = values.notes.trim();
-
-      await place.save();
-      res.redirect(`/places/${req.params.id}#community-reviews`);
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
-// Delete a community review (admins or owner).
 router.delete(
   "/places/:id/community-reviews/:reviewId",
   requireAuth,
+  requireAdmin,
   async (req, res, next) => {
     try {
-      const place = await Place.findById(req.params.id);
-      if (!place) {
-        return res.status(404).render("error", {
-          title: "Not Found",
-          message: "This coffee place could not be found.",
-        });
-      }
-
-      const review = place.communityReviews.id(req.params.reviewId);
-      if (!review) {
-        return res.status(404).render("error", {
-          title: "Not Found",
-          message: "This community review could not be found.",
-        });
-      }
-
-      const canManage =
-        !!(req.session.user && req.session.user.isAdmin) ||
-        isCommunityReviewOwner(review, req.session.user);
-
-      if (!canManage) {
-        return res.status(403).render("error", {
-          title: "Forbidden",
-          message: "You can only delete your own community reviews.",
-        });
-      }
-
-      review.deleteOne();
-      await place.save();
+      await Place.findByIdAndUpdate(req.params.id, {
+        $pull: { communityReviews: { _id: req.params.reviewId } },
+      });
       res.redirect(`/places/${req.params.id}#community-reviews`);
     } catch (err) {
       next(err);
