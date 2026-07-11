@@ -1,34 +1,66 @@
 const mongoose = require("mongoose");
 
-const optionalRatingField = (label) => ({
+const ratingField = (label) => ({
   type: Number,
+  required: [true, `A ${label} rating is required.`],
   min: [0, `${label} rating cannot be below 0.`],
   max: [10, `${label} rating cannot be above 10.`],
-  default: null,
 });
 
-const criticReviewSchema = new mongoose.Schema(
+const imageSchema = new mongoose.Schema(
   {
+    data: { type: Buffer, required: true },
+    contentType: { type: String, required: true },
+  },
+  { _id: true }
+);
+
+const communityReviewSchema = new mongoose.Schema(
+  {
+    accountUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    accountUsername: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: [40, "Account username must be 40 characters or fewer."],
+      default: "",
+    },
+    accountEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: [160, "Account email must be 160 characters or fewer."],
+      default: "",
+    },
+    author: {
+      type: String,
+      trim: true,
+      maxlength: [60, "Name must be 60 characters or fewer."],
+      default: "Anonymous",
+    },
     ordered: {
       type: String,
       trim: true,
       maxlength: [200, "What was ordered must be 200 characters or fewer."],
       default: "",
     },
-    costRating: optionalRatingField("cost"),
-    tasteRating: optionalRatingField("taste"),
-    locationRating: optionalRatingField("location"),
-    vibeRating: optionalRatingField("vibe"),
+    costRating: ratingField("cost"),
+    tasteRating: ratingField("taste"),
+    locationRating: ratingField("location"),
+    vibeRating: ratingField("vibe"),
     notes: {
       type: String,
       trim: true,
-      maxlength: [1000, "Notes must be 1000 characters or fewer."],
+      maxlength: [500, "Notes must be 500 characters or fewer."],
       default: "",
     },
   },
-  { _id: false }
+  { timestamps: true }
 );
-
 
 const placeSchema = new mongoose.Schema(
   {
@@ -44,6 +76,22 @@ const placeSchema = new mongoose.Schema(
       maxlength: [160, "Location must be 160 characters or fewer."],
       default: "",
     },
+    ordered: {
+      type: String,
+      trim: true,
+      maxlength: [200, "What was ordered must be 200 characters or fewer."],
+      default: "",
+    },
+    costRating: ratingField("cost"),
+    tasteRating: ratingField("taste"),
+    locationRating: ratingField("location"),
+    vibeRating: ratingField("vibe"),
+    notes: {
+      type: String,
+      trim: true,
+      maxlength: [500, "Notes must be 500 characters or fewer."],
+      default: "",
+    },
     owner: {
       type: String,
       trim: true,
@@ -55,37 +103,23 @@ const placeSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
-    maxReview: {
-      type: criticReviewSchema,
-      default: () => ({}),
+    criticSlot: {
+      type: String,
+      enum: ["max", "margo", ""],
+      default: "",
     },
-    margoReview: {
-      type: criticReviewSchema,
-      default: () => ({}),
-    },
-    imageId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Image",
-      default: null,
-    },
+    images: [imageSchema],
+    communityReviews: [communityReviewSchema],
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-function reviewOverall(review) {
-  if (!review) return null;
-  const values = [review.costRating, review.tasteRating, review.locationRating, review.vibeRating];
-  if (!values.every((value) => typeof value === "number")) return null;
-  return values.reduce((acc, value) => acc + value, 0) / 4;
-}
-
-// Overall rating is the average of available critic reviews.
+// Overall rating is the average of the four category ratings.
 placeSchema.virtual("overallRating").get(function () {
-  const max = reviewOverall(this.maxReview);
-  const margo = reviewOverall(this.margoReview);
-  const values = [max, margo].filter((value) => typeof value === "number");
-  if (!values.length) return 0;
-  return values.reduce((acc, value) => acc + value, 0) / values.length;
+  return (
+    (this.costRating + this.tasteRating + this.locationRating + this.vibeRating) /
+    4
+  );
 });
 
 module.exports = mongoose.model("Place", placeSchema);

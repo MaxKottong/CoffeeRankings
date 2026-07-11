@@ -4,29 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><%= title %> · Coffee Rankings</title>
-    <script>
-      (function () {
-        var serverTheme = "<%= (typeof user !== 'undefined' && user && typeof user.isDarkMode !== 'undefined') ? (user.isDarkMode ? 'dark' : 'light') : '' %>" || null;
-
-        try {
-          var savedTheme = localStorage.getItem("coffee-theme");
-          var activeTheme = serverTheme || savedTheme;
-          if (activeTheme === "dark") {
-            document.documentElement.setAttribute("data-theme", "dark");
-          } else {
-            document.documentElement.removeAttribute("data-theme");
-          }
-
-          if (serverTheme) {
-            localStorage.setItem("coffee-theme", serverTheme);
-          }
-        } catch (e) {
-          if (serverTheme === "dark") {
-            document.documentElement.setAttribute("data-theme", "dark");
-          }
-        }
-      })();
-    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

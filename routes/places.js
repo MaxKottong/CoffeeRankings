@@ -3,28 +3,26 @@ const multer = require("multer");
 const { body, validationResult } = require("express-validator");
 
 const Place = require("../models/Place");
-const Image = require("../models/Image");
-const CommunityReview = require("../models/CommunityReview");
 const User = require("../models/User");
 const { requireAuth, requireAdmin } = require("../middleware/auth");
 
 const router = express.Router();
 
-// Store a single uploaded image in memory so we can persist it in MongoDB.
+// Store uploaded images in memory so we can persist them in MongoDB.
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  limits: { fileSize: 5 * 1024 * 1024, files: 6 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype && file.mimetype.startsWith("image/")) {
       return cb(null, true);
     }
     cb(new Error("Only image files can be uploaded."));
   },
-}).single("image");
+});
 
-// Accept a single image per review, capturing any upload error for later.
+// Accept up to 6 images per place, but keep upload errors friendly.
 const uploadImages = (req, res, next) => {
-  upload(req, res, (err) => {
+  upload.array("images", 6)(req, res, (err) => {
     if (err) {
       req.uploadError = err.message || "Image upload failed.";
     }
@@ -49,17 +47,17 @@ function emptyAdminSubmitValues() {
     maxTasteRating: "",
     maxLocationRating: "",
     maxVibeRating: "",
-    sharedNotes: "",
+    maxNotes: "",
     margoOrdered: "",
     margoCostRating: "",
     margoTasteRating: "",
     margoLocationRating: "",
     margoVibeRating: "",
+    margoNotes: "",
   };
 }
 
 function readAdminValues(body) {
-  const sharedNotes = body.sharedNotes || body.maxNotes || body.margoNotes || "";
   return {
     name: body.name || "",
     location: body.location || "",
@@ -68,28 +66,21 @@ function readAdminValues(body) {
     maxTasteRating: body.maxTasteRating || "",
     maxLocationRating: body.maxLocationRating || "",
     maxVibeRating: body.maxVibeRating || "",
-    sharedNotes,
+    maxNotes: body.maxNotes || "",
     margoOrdered: body.margoOrdered || "",
     margoCostRating: body.margoCostRating || "",
     margoTasteRating: body.margoTasteRating || "",
     margoLocationRating: body.margoLocationRating || "",
     margoVibeRating: body.margoVibeRating || "",
+    margoNotes: body.margoNotes || "",
   };
 }
 
-function fileToImage(file) {
-  if (!file || !file.buffer || !file.buffer.length) return null;
-  return {
+function filesToImages(files) {
+  return (files || []).map((file) => ({
     data: file.buffer,
-    contentType: file.mimetype || "image/jpeg",
-  };
-}
-
-async function saveImage(file) {
-  const image = fileToImage(file);
-  if (!image) return null;
-  const created = await Image.create(image);
-  return created._id;
+    contentType: file.mimetype,
+  }));
 }
 
 function normalized(text) {
@@ -106,40 +97,41 @@ function placeKeyFromParts(name, location) {
   return `${normalized(name)}|${normalized(location)}`;
 }
 
-function reviewFromEmbeddedReview(doc, review) {
-  if (!review) return null;
-
-  const hasAnyReviewValue =
-    String(review.ordered || "").trim() ||
-    String(review.notes || "").trim() ||
-    [review.costRating, review.tasteRating, review.locationRating, review.vibeRating].some(
-      (value) => typeof value === "number"
-    );
-
-  if (!hasAnyReviewValue) return null;
-
-  const cost = typeof review.costRating === "number" ? review.costRating : 0;
-  const taste = typeof review.tasteRating === "number" ? review.tasteRating : 0;
-  const location = typeof review.locationRating === "number" ? review.locationRating : 0;
-  const vibe = typeof review.vibeRating === "number" ? review.vibeRating : 0;
+function toRatingBreakdown(place) {
+  const fallback = typeof place.rating === "number" ? place.rating : 0;
+  const cost =
+    typeof place.costRating === "number" ? place.costRating : fallback;
+  const taste =
+    typeof place.tasteRating === "number" ? place.tasteRating : fallback;
+  const location =
+    typeof place.locationRating === "number" ? place.locationRating : fallback;
+  const vibe =
+    typeof place.vibeRating === "number" ? place.vibeRating : fallback;
+  const overall = (cost + taste + location + vibe) / 4;
 
   return {
-    _id: doc._id,
-    ordered: review.ordered || "",
-    notes: review.notes || "",
     costRating: cost,
     tasteRating: taste,
     locationRating: location,
     vibeRating: vibe,
-    overallRating: (cost + taste + location + vibe) / 4,
+    overallRating: overall,
   };
 }
 
-function pickImageFromDoc(doc) {
-  if (!doc.imageId) return { image: null, imagePlaceId: null };
+function toReviewView(place) {
+  const breakdown = toRatingBreakdown(place);
   return {
-    image: { _id: doc.imageId },
-    imagePlaceId: doc._id,
+    _id: place._id,
+    name: place.name,
+    location: place.location,
+    ordered: place.ordered || "",
+    notes: place.notes || "",
+    owner: place.owner || "",
+    ownerName: place.ownerName || "",
+    criticSlot: place.criticSlot || "",
+    createdAt: place.createdAt,
+    images: (place.images || []).map((img) => ({ _id: img._id })),
+    ...breakdown,
   };
 }
 
@@ -165,50 +157,6 @@ function summarizeCommunityReviews(reviews) {
     average: list.length ? total / list.length : null,
     count: list.length,
   };
-}
-
-function toCommunityReviewView(review) {
-  return {
-    _id: review._id,
-    placeId: review.placeId,
-    accountUserId: review.accountUserId || null,
-    accountUsername: String(review.accountUsername || "").trim().toLowerCase(),
-    accountEmail: String(review.accountEmail || "").trim().toLowerCase(),
-    author: review.author || "Anonymous",
-    ordered: review.ordered || "",
-    costRating: Number(review.costRating) || 0,
-    tasteRating: Number(review.tasteRating) || 0,
-    locationRating: Number(review.locationRating) || 0,
-    vibeRating: Number(review.vibeRating) || 0,
-    notes: review.notes || "",
-    createdAt: review.createdAt,
-    updatedAt: review.updatedAt,
-  };
-}
-
-async function loadCommunityReviewsByPlaceIds(placeIds) {
-  const normalizedIds = Array.from(
-    new Set((placeIds || []).map((id) => String(id)).filter(Boolean))
-  );
-  if (!normalizedIds.length) {
-    return new Map();
-  }
-
-  const collectionReviews = await CommunityReview.find({
-    placeId: { $in: normalizedIds },
-  })
-    .sort({ createdAt: 1 })
-    .lean();
-
-  const map = new Map();
-  normalizedIds.forEach((id) => map.set(id, []));
-  collectionReviews.forEach((review) => {
-    const key = String(review.placeId || "");
-    if (!map.has(key)) map.set(key, []);
-    map.get(key).push(toCommunityReviewView(review));
-  });
-
-  return map;
 }
 
 function criticsAverage(maxReview, margoReview) {
@@ -245,12 +193,21 @@ function isCommunityReviewOwner(review, sessionUser) {
   return false;
 }
 
+function criticSlotForDoc(doc) {
+  const slot = String(doc.criticSlot || "").trim().toLowerCase();
+  if (slot === "max" || slot === "margo") return slot;
+
+  const ownerName = String(doc.ownerName || "").trim().toLowerCase();
+  if (ownerName === "max") return "max";
+  if (ownerName === "margo") return "margo";
+  return "";
+}
+
 function buildCriticSection(values, prefix) {
   const ratingFields = ["CostRating", "TasteRating", "LocationRating", "VibeRating"];
-  const sharedNotes = String(values.sharedNotes || "").trim();
   const hasAnyInput =
     String(values[`${prefix}Ordered`] || "").trim() ||
-    sharedNotes ||
+    String(values[`${prefix}Notes`] || "").trim() ||
     ratingFields.some((field) => String(values[`${prefix}${field}`] || "").trim());
 
   return {
@@ -260,7 +217,7 @@ function buildCriticSection(values, prefix) {
     tasteRating: values[`${prefix}TasteRating`],
     locationRating: values[`${prefix}LocationRating`],
     vibeRating: values[`${prefix}VibeRating`],
-    notes: sharedNotes,
+    notes: String(values[`${prefix}Notes`] || "").trim(),
   };
 }
 
@@ -289,9 +246,6 @@ function validateAdminCriticValues(values) {
   if (location.length > 160) {
     errors.push({ msg: "Location must be 160 characters or fewer." });
   }
-  if (String(values.sharedNotes || "").trim().length > 1000) {
-    errors.push({ msg: "Shared notes must be 1000 characters or fewer." });
-  }
 
   if (!max.provided && !margo.provided) {
     errors.push({ msg: "Add ratings for at least Max or Margo." });
@@ -306,6 +260,9 @@ function validateAdminCriticValues(values) {
 
     if (section.ordered.length > 200) {
       errors.push({ msg: `${label} ordered field must be 200 characters or fewer.` });
+    }
+    if (section.notes.length > 500) {
+      errors.push({ msg: `${label} notes must be 500 characters or fewer.` });
     }
   }
 
@@ -323,25 +280,31 @@ function validateAdminCriticValues(values) {
   };
 }
 
-function consolidatePlaces(places, communityByPlaceId = new Map()) {
+function consolidatePlaces(places) {
   const groups = new Map();
 
   (places || []).forEach((placeDoc) => {
-    const key = placeKey(placeDoc);
+    const place = toReviewView(placeDoc);
+    const key = placeKey(place);
 
     if (!groups.has(key)) {
       groups.set(key, {
         key,
-        name: placeDoc.name,
-        location: placeDoc.location,
-        placeIds: [],
+        name: place.name,
+        location: place.location,
+        image: place.images[0] || null,
         docs: [],
       });
     }
 
-    groups.get(key).placeIds.push(String(placeDoc._id));
+    if (!groups.get(key).image && place.images && place.images.length) {
+      groups.get(key).image = place.images[0];
+    }
 
-    groups.get(key).docs.push(placeDoc);
+    groups.get(key).docs.push({
+      ...place,
+      communityReviews: placeDoc.communityReviews || [],
+    });
   });
 
   return Array.from(groups.values())
@@ -349,20 +312,13 @@ function consolidatePlaces(places, communityByPlaceId = new Map()) {
       const sortedDocs = group.docs.slice().sort((a, b) => {
         return new Date(a.createdAt) - new Date(b.createdAt);
       });
-      const anchor = sortedDocs[sortedDocs.length - 1] || sortedDocs[0];
-      const maxReview = reviewFromEmbeddedReview(anchor, anchor.maxReview);
-      const margoReview = reviewFromEmbeddedReview(anchor, anchor.margoReview);
+      const maxReview =
+        sortedDocs.find((doc) => criticSlotForDoc(doc) === "max") || null;
+      const margoReview =
+        sortedDocs.find((doc) => criticSlotForDoc(doc) === "margo") || null;
+      const anchor = maxReview || margoReview || sortedDocs[0];
       const latestReview = sortedDocs[sortedDocs.length - 1] || null;
-      const latestImageDoc =
-        sortedDocs
-          .slice()
-          .reverse()
-          .find((doc) => !!doc.imageId) || null;
-      const imageData = latestImageDoc ? pickImageFromDoc(latestImageDoc) : { image: null, imagePlaceId: null };
-      const collectionCommunity = group.placeIds.flatMap(
-        (id) => communityByPlaceId.get(String(id)) || []
-      );
-      const community = summarizeCommunityReviews(collectionCommunity);
+      const community = summarizeCommunityReviews(anchor.communityReviews || []);
       const criticAverage = criticsAverage(maxReview, margoReview);
 
       return {
@@ -370,9 +326,7 @@ function consolidatePlaces(places, communityByPlaceId = new Map()) {
         anchorId: anchor._id,
         name: group.name,
         location: group.location,
-        image: imageData.image,
-        imagePlaceId: imageData.imagePlaceId,
-        imageUpdatedAt: latestImageDoc && latestImageDoc.updatedAt ? latestImageDoc.updatedAt : null,
+        image: group.image,
         maxReview,
         margoReview,
         criticsAverage: criticAverage,
@@ -415,11 +369,8 @@ async function renderPlacePage(
   }
 
   const allPlaces = await Place.find().lean();
-  const communityByPlaceId = await loadCommunityReviewsByPlaceIds(
-    allPlaces.map((doc) => doc._id)
-  );
   const key = placeKeyFromParts(base.name, base.location);
-  const grouped = consolidatePlaces(allPlaces, communityByPlaceId);
+  const grouped = consolidatePlaces(allPlaces);
   const place = grouped.find((entry) => entry.key === key);
 
   if (!place) {
@@ -484,10 +435,7 @@ async function renderPlacePage(
       place.maxReview && typeof place.maxReview.vibeRating === "number"
         ? place.maxReview.vibeRating.toFixed(1)
         : "",
-    sharedNotes:
-      (place.maxReview && place.maxReview.notes) ||
-      (place.margoReview && place.margoReview.notes) ||
-      "",
+    maxNotes: (place.maxReview && place.maxReview.notes) || "",
     margoOrdered: (place.margoReview && place.margoReview.ordered) || "",
     margoCostRating:
       place.margoReview && typeof place.margoReview.costRating === "number"
@@ -505,6 +453,7 @@ async function renderPlacePage(
       place.margoReview && typeof place.margoReview.vibeRating === "number"
         ? place.margoReview.vibeRating.toFixed(1)
         : "",
+    margoNotes: (place.margoReview && place.margoReview.notes) || "",
   };
 
   return res.status(options.statusCode || 200).render("place-detail", {
@@ -528,65 +477,47 @@ async function renderPlacePage(
 async function upsertCriticDoc({
   existing,
   ownerEmail,
+  ownerName,
+  criticSlot,
   common,
-  maxSection,
-  margoSection,
-  imageId,
+  section,
+  images,
 }) {
+  if (!section.provided && !existing) {
+    return;
+  }
+
   const doc = existing || new Place();
   doc.name = common.name;
   doc.location = common.location;
   doc.owner = ownerEmail;
-  doc.ownerName = "Max + Margo";
+  doc.ownerName = ownerName;
+  doc.criticSlot = criticSlot;
 
-  if (maxSection && maxSection.provided) {
-    doc.maxReview = {
-      ordered: maxSection.ordered,
-      costRating: maxSection.costRating,
-      tasteRating: maxSection.tasteRating,
-      locationRating: maxSection.locationRating,
-      vibeRating: maxSection.vibeRating,
-      notes: maxSection.notes,
-    };
+  if (section.provided) {
+    doc.ordered = section.ordered;
+    doc.costRating = section.costRating;
+    doc.tasteRating = section.tasteRating;
+    doc.locationRating = section.locationRating;
+    doc.vibeRating = section.vibeRating;
+    doc.notes = section.notes;
   }
 
-  if (margoSection && margoSection.provided) {
-    doc.margoReview = {
-      ordered: margoSection.ordered,
-      costRating: margoSection.costRating,
-      tasteRating: margoSection.tasteRating,
-      locationRating: margoSection.locationRating,
-      vibeRating: margoSection.vibeRating,
-      notes: margoSection.notes,
-    };
-  }
-
-  if (imageId) {
-    if (doc.imageId && String(doc.imageId) !== String(imageId)) {
-      await Image.findByIdAndDelete(doc.imageId);
-    }
-    doc.imageId = imageId;
-  }
+  (images || []).forEach((img) => doc.images.push(img));
   await doc.save();
-  return doc;
 }
 
 // Home page — show only the most recently created review from the DB.
 router.get("/", async (req, res, next) => {
   try {
     const allPlaces = await Place.find().lean();
-    const communityByPlaceId = await loadCommunityReviewsByPlaceIds(
-      allPlaces.map((doc) => doc._id)
-    );
-    const grouped = consolidatePlaces(allPlaces, communityByPlaceId);
-    const latestPlace =
-      grouped
-        .slice()
-        .sort(
-          (a, b) =>
-            new Date((b.latestReview && b.latestReview.createdAt) || 0) -
-            new Date((a.latestReview && a.latestReview.createdAt) || 0)
-        )[0] || null;
+    const latestRaw = allPlaces
+      .slice()
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    const grouped = consolidatePlaces(allPlaces);
+    const latestPlace = latestRaw
+      ? grouped.find((entry) => entry.key === placeKey(latestRaw)) || null
+      : null;
 
     res.render("index", {
       title: "Coffee Rankings",
@@ -601,11 +532,7 @@ router.get("/", async (req, res, next) => {
 router.get("/reviews", async (req, res, next) => {
   try {
     const searchTerm = String(req.query.q || "").trim();
-    const allPlaces = await Place.find().lean();
-    const communityByPlaceId = await loadCommunityReviewsByPlaceIds(
-      allPlaces.map((doc) => doc._id)
-    );
-    const grouped = consolidatePlaces(allPlaces, communityByPlaceId);
+    const grouped = consolidatePlaces(await Place.find().lean());
     const places = searchTerm
       ? grouped.filter((place) =>
           String(place.name || "")
@@ -649,12 +576,13 @@ router.get("/places/:id", async (req, res, next) => {
 // Serve a place image.
 router.get("/places/:id/image/:imageId", async (req, res, next) => {
   try {
-    const imageDoc = await Image.findById(req.params.imageId).lean();
-    if (!imageDoc || !imageDoc.data) return res.status(404).end();
-
-    res.set("Content-Type", imageDoc.contentType || "image/jpeg");
-    res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
-    return res.send(imageDoc.data);
+    const place = await Place.findById(req.params.id).select("images");
+    if (!place) return res.status(404).end();
+    const image = place.images.id(req.params.imageId);
+    if (!image) return res.status(404).end();
+    res.set("Content-Type", image.contentType);
+    res.set("Cache-Control", "public, max-age=31536000, immutable");
+    res.send(image.data);
   } catch (err) {
     next(err);
   }
@@ -692,25 +620,31 @@ router.post(
     }
 
     try {
-      const imageId = await saveImage(req.file);
+      const images = filesToImages(req.files);
       const adminEmail = String((req.session.user && req.session.user.email) || "")
         .trim()
         .toLowerCase();
 
-      const existing =
-        (await Place.findOne({
-          name: parsed.normalized.name,
-          location: parsed.normalized.location,
-        })) || null;
-
-      await upsertCriticDoc({
-        existing,
-        ownerEmail: adminEmail,
-        common: parsed.normalized,
-        maxSection: parsed.normalized.max,
-        margoSection: parsed.normalized.margo,
-        imageId,
-      });
+      await Promise.all([
+        upsertCriticDoc({
+          existing: null,
+          ownerEmail: adminEmail,
+          ownerName: "Max",
+          criticSlot: "max",
+          common: parsed.normalized,
+          section: parsed.normalized.max,
+          images,
+        }),
+        upsertCriticDoc({
+          existing: null,
+          ownerEmail: adminEmail,
+          ownerName: "Margo",
+          criticSlot: "margo",
+          common: parsed.normalized,
+          section: parsed.normalized.margo,
+          images,
+        }),
+      ]);
 
       res.redirect("/reviews");
     } catch (err) {
@@ -748,27 +682,51 @@ router.put(
         });
       }
 
-      const existingSingle =
-        (await Place.findOne({
-          name: base.name,
-          location: base.location,
-        })) || null;
+      const key = placeKey(base);
+      const all = await Place.find();
+      const groupDocs = all.filter((doc) => placeKey(doc) === key);
+      const maxDoc =
+        groupDocs.find((doc) => criticSlotForDoc(doc) === "max") || null;
+      const margoDoc =
+        groupDocs.find((doc) => criticSlotForDoc(doc) === "margo") || null;
 
       const adminEmail = String((req.session.user && req.session.user.email) || "")
         .trim()
         .toLowerCase();
-      const imageId = await saveImage(req.file);
+      const images = filesToImages(req.files);
 
-      const updated = await upsertCriticDoc({
-        existing: existingSingle || base,
-        ownerEmail: adminEmail,
-        common: parsed.normalized,
-        maxSection: parsed.normalized.max,
-        margoSection: parsed.normalized.margo,
-        imageId,
-      });
+      await Promise.all([
+        upsertCriticDoc({
+          existing: maxDoc,
+          ownerEmail: adminEmail,
+          ownerName: "Max",
+          criticSlot: "max",
+          common: parsed.normalized,
+          section: parsed.normalized.max,
+          images,
+        }),
+        upsertCriticDoc({
+          existing: margoDoc,
+          ownerEmail: adminEmail,
+          ownerName: "Margo",
+          criticSlot: "margo",
+          common: parsed.normalized,
+          section: parsed.normalized.margo,
+          images,
+        }),
+      ]);
 
-      return res.redirect(`/places/${updated._id}`);
+      const refreshedBase = await Place.findOne({
+        name: parsed.normalized.name,
+        location: parsed.normalized.location,
+        criticSlot: { $in: ["max", "margo"] },
+      }).lean();
+
+      if (refreshedBase) {
+        return res.redirect(`/places/${refreshedBase._id}`);
+      }
+
+      return res.redirect("/reviews");
     } catch (err) {
       next(err);
     }
@@ -782,23 +740,9 @@ router.delete(
   requireAdmin,
   async (req, res, next) => {
     try {
-      const place = await Place.findById(req.params.id);
-      if (!place) return res.redirect("/reviews");
-
-      const imageId = String(req.params.imageId || "");
-      const imageIdInCollection = place.imageId && String(place.imageId) === imageId;
-
-      if (imageIdInCollection) {
-        place.imageId = null;
-        await place.save();
-        await Image.findByIdAndDelete(req.params.imageId);
-      } else {
-        return res.status(404).render("error", {
-          title: "Not Found",
-          message: "This image could not be found.",
-        });
-      }
-
+      await Place.findByIdAndUpdate(req.params.id, {
+        $pull: { images: { _id: req.params.imageId } },
+      });
       res.redirect(`/places/${req.params.id}`);
     } catch (err) {
       next(err);
@@ -818,17 +762,14 @@ router.delete(
 
       const key = placeKey(base);
       const all = await Place.find()
-        .select("_id name location imageId")
+        .select("_id name location owner ownerName criticSlot")
         .lean();
-      const docs = all.filter((doc) => placeKey(doc) === key);
-      const ids = docs.map((doc) => doc._id);
-      const imageIds = docs.map((doc) => doc.imageId).filter(Boolean);
+      const ids = all
+        .filter((doc) => placeKey(doc) === key)
+        .filter((doc) => ["max", "margo"].includes(criticSlotForDoc(doc)))
+        .map((doc) => doc._id);
 
       if (ids.length) {
-        if (imageIds.length) {
-          await Image.deleteMany({ _id: { $in: imageIds } });
-        }
-        await CommunityReview.deleteMany({ placeId: { $in: ids } });
         await Place.deleteMany({ _id: { $in: ids } });
       }
 
@@ -857,8 +798,8 @@ router.post(
   ratingValidator("vibeRating", "Vibe"),
   body("notes")
     .trim()
-    .isLength({ max: 1000 })
-    .withMessage("Notes must be 1000 characters or fewer."),
+    .isLength({ max: 500 })
+    .withMessage("Notes must be 500 characters or fewer."),
   async (req, res, next) => {
     const errors = validationResult(req);
     const values = {
@@ -880,28 +821,23 @@ router.post(
         });
       }
 
-      const place = await Place.findById(req.params.id).select("_id").lean();
-      if (!place) {
-        return res.status(404).render("error", {
-          title: "Not Found",
-          message: "This coffee place could not be found.",
-        });
-      }
-
-      await CommunityReview.create({
-        placeId: req.params.id,
-        accountUserId: req.session.user.id,
-        accountUsername: String(req.session.user.username || "")
-          .trim()
-          .toLowerCase(),
-        accountEmail: String(req.session.user.email || "").trim().toLowerCase(),
-        author: values.author.trim() || "Anonymous",
-        ordered: values.ordered.trim(),
-        costRating: Number(values.costRating),
-        tasteRating: Number(values.tasteRating),
-        locationRating: Number(values.locationRating),
-        vibeRating: Number(values.vibeRating),
-        notes: values.notes.trim(),
+      await Place.findByIdAndUpdate(req.params.id, {
+        $push: {
+          communityReviews: {
+            accountUserId: req.session.user.id,
+            accountUsername: String(req.session.user.username || "")
+              .trim()
+              .toLowerCase(),
+            accountEmail: String(req.session.user.email || "").trim().toLowerCase(),
+            author: values.author.trim() || "Anonymous",
+            ordered: values.ordered.trim(),
+            costRating: Number(values.costRating),
+            tasteRating: Number(values.tasteRating),
+            locationRating: Number(values.locationRating),
+            vibeRating: Number(values.vibeRating),
+            notes: values.notes.trim(),
+          },
+        },
       });
       res.redirect(`/places/${req.params.id}#community-reviews`);
     } catch (err) {
@@ -928,8 +864,8 @@ router.put(
   ratingValidator("vibeRating", "Vibe"),
   body("notes")
     .trim()
-    .isLength({ max: 1000 })
-    .withMessage("Notes must be 1000 characters or fewer."),
+    .isLength({ max: 500 })
+    .withMessage("Notes must be 500 characters or fewer."),
   async (req, res, next) => {
     const errors = validationResult(req);
     const values = {
@@ -951,7 +887,7 @@ router.put(
         });
       }
 
-      const place = await Place.findById(req.params.id).select("_id").lean();
+      const place = await Place.findById(req.params.id);
       if (!place) {
         return res.status(404).render("error", {
           title: "Not Found",
@@ -959,11 +895,7 @@ router.put(
         });
       }
 
-      const review = await CommunityReview.findOne({
-        _id: req.params.reviewId,
-        placeId: req.params.id,
-      });
-
+      const review = place.communityReviews.id(req.params.reviewId);
       if (!review) {
         return res.status(404).render("error", {
           title: "Not Found",
@@ -990,7 +922,7 @@ router.put(
       review.vibeRating = Number(values.vibeRating);
       review.notes = values.notes.trim();
 
-      await review.save();
+      await place.save();
       res.redirect(`/places/${req.params.id}#community-reviews`);
     } catch (err) {
       next(err);
@@ -1004,7 +936,7 @@ router.delete(
   requireAuth,
   async (req, res, next) => {
     try {
-      const place = await Place.findById(req.params.id).select("_id").lean();
+      const place = await Place.findById(req.params.id);
       if (!place) {
         return res.status(404).render("error", {
           title: "Not Found",
@@ -1012,11 +944,7 @@ router.delete(
         });
       }
 
-      const review = await CommunityReview.findOne({
-        _id: req.params.reviewId,
-        placeId: req.params.id,
-      }).lean();
-
+      const review = place.communityReviews.id(req.params.reviewId);
       if (!review) {
         return res.status(404).render("error", {
           title: "Not Found",
@@ -1035,7 +963,8 @@ router.delete(
         });
       }
 
-      await CommunityReview.findByIdAndDelete(req.params.reviewId);
+      review.deleteOne();
+      await place.save();
       res.redirect(`/places/${req.params.id}#community-reviews`);
     } catch (err) {
       next(err);
